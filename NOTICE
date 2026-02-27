@@ -1,0 +1,33 @@
+FlashSR-Go
+Copyright 2026 MeKo-Christian
+
+This product includes software and model artefacts from third parties:
+
+---
+
+FlashSR ONNX Model
+Copyright (c) hance-ai
+Licensed under the Apache License, Version 2.0.
+Source: https://huggingface.co/hance-ai/FlashSR
+Pinned artefact: onnx/model.onnx (SHA256 TBD — see model/model.go)
+
+---
+
+ONNX Runtime
+Copyright (c) Microsoft Corporation
+Licensed under the MIT License.
+Source: https://github.com/microsoft/onnxruntime
+
+---
+
+onnxruntime_go (Go bindings)
+Copyright (c) yalue
+Licensed under the MIT License.
+Source: https://github.com/yalue/onnxruntime_go
+
+---
+
+algo-dsp (optional, build tag: algodsp)
+Copyright (c) cwbudde
+Licensed under the MIT License.
+Source: https://github.com/cwbudde/algo-dsp

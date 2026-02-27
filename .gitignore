@@ -1,0 +1,30 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go
+go.sum
+vendor/
+*.test
+*.prof
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.pwx
+*~
+
+# Project specific
+# Models and large assets should be ignored if they are downloaded or generated
+*.onnx
+assets/models/
+
+# Test outputs
+coverage.out
+test-results/
