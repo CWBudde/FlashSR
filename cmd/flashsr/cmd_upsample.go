@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/MeKo-Christian/flashsr-go/flashsr"
 	"github.com/MeKo-Christian/flashsr-go/stream"
+	"github.com/spf13/cobra"
 )
 
 type upsampleFlags struct {
@@ -80,10 +79,12 @@ func runUpsample(f upsampleFlags) error {
 			ChunkSize: f.chunkSize,
 		})
 		_ = st
+
 		fmt.Fprintln(os.Stderr, "streaming mode selected")
 	}
 
 	// TODO(phase4): write output WAV.
 	fmt.Fprintf(os.Stderr, "would write 48 kHz output to %s\n", f.output)
+
 	return nil
 }

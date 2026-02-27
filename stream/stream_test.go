@@ -18,6 +18,7 @@ func (e *scaleEngine) Run(input []float32) ([]float32, error) {
 		out[i*3+1] = v
 		out[i*3+2] = v
 	}
+
 	return out, nil
 }
 func (e *scaleEngine) Close() error            { return nil }
@@ -33,7 +34,9 @@ func TestStreamer_Write_Read_Basic(t *testing.T) {
 	defer s.Reset()
 
 	input := make([]float32, 4000)
-	if err := s.Write(input); err != nil {
+
+	err := s.Write(input)
+	if err != nil {
 		t.Fatalf("Write: %v", err)
 	}
 
@@ -47,7 +50,9 @@ func TestStreamer_OutputNoNaN(t *testing.T) {
 	s := newStreamer(t, stream.Config{ChunkSize: 4000})
 
 	input := makeSine(440, 16000, 8000)
-	if err := s.Write(input); err != nil {
+
+	err := s.Write(input)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,18 +72,21 @@ func TestStreamer_Reset_Deterministic(t *testing.T) {
 
 	input := makeSine(440, 16000, 4000)
 
-	if err := s.Write(input); err != nil {
+	err := s.Write(input)
+	if err != nil {
 		t.Fatal(err)
 	}
+
 	buf1 := make([]float32, s.Buffered())
 	n1, _ := s.Read(buf1)
 	buf1 = buf1[:n1]
 
 	s.Reset()
 
-	if err := s.Write(input); err != nil {
+	if err = s.Write(input); err != nil {
 		t.Fatal(err)
 	}
+
 	buf2 := make([]float32, s.Buffered())
 	n2, _ := s.Read(buf2)
 	buf2 = buf2[:n2]
@@ -86,6 +94,7 @@ func TestStreamer_Reset_Deterministic(t *testing.T) {
 	if n1 != n2 {
 		t.Fatalf("after Reset lengths differ: %d vs %d", n1, n2)
 	}
+
 	for i := range buf1 {
 		if buf1[i] != buf2[i] {
 			t.Fatalf("output differs at index %d: %.6f vs %.6f", i, buf1[i], buf2[i])
@@ -98,7 +107,9 @@ func TestStreamer_Flush(t *testing.T) {
 
 	// Write a partial chunk (< ChunkSize).
 	input := make([]float32, 2000)
-	if err := s.Write(input); err != nil {
+
+	err := s.Write(input)
+	if err != nil {
 		t.Fatal(err)
 	}
 	// Nothing processed yet.
@@ -106,9 +117,10 @@ func TestStreamer_Flush(t *testing.T) {
 		t.Fatalf("expected 0 buffered before flush, got %d", s.Buffered())
 	}
 
-	if err := s.Flush(); err != nil {
+	if err = s.Flush(); err != nil {
 		t.Fatal(err)
 	}
+
 	if s.Buffered() == 0 {
 		t.Fatal("expected output after Flush")
 	}
@@ -120,7 +132,8 @@ func TestStreamer_CrossfadeSmooth(t *testing.T) {
 	// Feed 3 full chunks of a sine wave.
 	input := makeSine(440, 16000, 12000)
 	for i := 0; i < 12000; i += 4000 {
-		if err := s.Write(input[i : i+4000]); err != nil {
+		err := s.Write(input[i : i+4000])
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -157,6 +170,7 @@ func makeSine(freq, sampleRate, n int) []float32 {
 	for i := range out {
 		out[i] = float32(math.Sin(2 * math.Pi * float64(freq) * float64(i) / float64(sampleRate)))
 	}
+
 	return out
 }
 
@@ -164,5 +178,6 @@ func abs32(x float32) float32 {
 	if x < 0 {
 		return -x
 	}
+
 	return x
 }

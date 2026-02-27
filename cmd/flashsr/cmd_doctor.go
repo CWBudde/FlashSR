@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"github.com/MeKo-Christian/flashsr-go/flashsr"
 	"github.com/MeKo-Christian/flashsr-go/model"
+	"github.com/spf13/cobra"
 )
 
 type doctorFlags struct {
@@ -41,11 +40,13 @@ func runDoctor(f doctorFlags) error {
 
 	// --- Model check ---
 	fmt.Println("\n[Model]")
+
 	modelBytes, err := model.Load(model.Config{Path: f.modelPath})
 	if err != nil {
 		fmt.Printf("  ✗ model load failed: %v\n", err)
 	} else {
 		fmt.Printf("  ✓ model loaded (%d bytes)\n", len(modelBytes))
+
 		if model.ExpectedSHA256 != "" {
 			fmt.Printf("  ✓ pinned SHA256: %s\n", model.ExpectedSHA256)
 		} else {
@@ -55,6 +56,7 @@ func runDoctor(f doctorFlags) error {
 
 	// --- ORT / Engine check ---
 	fmt.Println("\n[ORT Engine]")
+
 	u, err := flashsr.New(flashsr.Config{
 		ModelPath:  f.modelPath,
 		ORTLibPath: f.ortLib,
@@ -62,6 +64,7 @@ func runDoctor(f doctorFlags) error {
 	if err != nil {
 		fmt.Printf("  ✗ engine init failed: %v\n", err)
 		fmt.Println("\nDoctor finished with errors.")
+
 		return nil // non-fatal; show all results
 	}
 	defer u.Close()
@@ -73,5 +76,6 @@ func runDoctor(f doctorFlags) error {
 	fmt.Printf("  ✓ output tensor: %s\n", info.OutputName)
 
 	fmt.Println("\nDoctor finished — all checks passed.")
+
 	return nil
 }

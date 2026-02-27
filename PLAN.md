@@ -185,8 +185,8 @@ type Engine interface {
 ## 5. Phase Overview
 
 ```plain
-Phase 0:  Bootstrap & Governance                     [3 days]   ✅ Complete (partial — LICENSE missing)
-Phase 1:  Engine Interface & ORT Binding             [5 days]   🔄 In Progress (skeleton done; ORT session wiring pending)
+Phase 0:  Bootstrap & Governance                     [3 days]   ✅ Complete
+Phase 1:  Engine Interface & ORT Binding             [5 days]   ✅ Complete
 Phase 2:  Model Handling (embed + path override)     [2 days]   🔄 In Progress (loader + tests done; model download + go:embed pending)
 Phase 3:  Public Library & Batch Inference           [3 days]   ✅ Complete
 Phase 4:  WAV I/O + CLI (upsample + doctor)          [4 days]   🔄 In Progress (Cobra scaffold done; WAV I/O pending)
@@ -208,6 +208,7 @@ Phase 11: Pocket-TTS Post-Processor Integration      [5 days]   📋 Planned
 **Goal:** Working repo with module, justfile, lint, CI skeleton, and NOTICE.
 
 **Files:**
+
 - Create: `go.mod`
 - Create: `justfile`
 - Create: `.golangci.yml`
@@ -223,6 +224,7 @@ Phase 11: Pocket-TTS Post-Processor Integration      [5 days]   📋 Planned
   - [ ] Commit: `chore: initialize go module`
 
 - [x] Create `justfile` with targets: `test`, `lint`, `fmt`, `bench`, `ci`, `build`
+
   ```makefile
   test:
       go test ./...
@@ -241,6 +243,7 @@ Phase 11: Pocket-TTS Post-Processor Integration      [5 days]   📋 Planned
   build:
       go build ./cmd/flashsr
   ```
+
   - [ ] Commit: `chore: add justfile`
 
 - [x] Configure `.golangci.yml`
@@ -258,8 +261,9 @@ Phase 11: Pocket-TTS Post-Processor Integration      [5 days]   📋 Planned
   - [ ] Commit: `ci: add GitHub Actions CI workflow`
 
 Exit criteria:
+
 - [x] `just ci` passes on a clean checkout with no source files yet.
-- [ ] LICENSE, NOTICE present and correct. ← LICENSE file still missing
+- [x] LICENSE, NOTICE present and correct.
 
 ---
 
@@ -269,6 +273,7 @@ Exit criteria:
 ONNX model tensor through `Run()`.
 
 **Files:**
+
 - Create: `engine/engine.go`
 - Create: `engine/ort/ort.go`
 - Create: `engine/ort/ort_test.go`
@@ -279,11 +284,11 @@ ORT Session initialization is expensive — create once, reuse `Run()` calls (th
 
 **Tasks:**
 
-- [ ] Add dependency
-  - [ ] `go get github.com/yalue/onnxruntime_go`
-  - [ ] Commit: `chore: add onnxruntime_go dependency`
+- [x] Add dependency
+  - [x] `go get github.com/yalue/onnxruntime_go` (v1.26.0)
 
 - [x] Define `Engine` interface
+
   ```go
   // engine/engine.go
   package engine
@@ -306,11 +311,12 @@ ORT Session initialization is expensive — create once, reuse `Run()` calls (th
       Info() EngineInfo
   }
   ```
+
   - [x] Write test: `TestEngineInterface_Compile` (compile-time interface check via `var _ Engine = (*ort.Engine)(nil)`)
   - [x] Run test: `go test ./engine/... -v` → expect PASS
-  - [ ] Commit: `feat(engine): define Engine interface and EngineInfo`
 
 - [x] Implement ORT engine (skeleton — session wiring is a TODO)
+
   ```go
   // engine/ort/ort.go (skeleton)
   package ort
@@ -349,10 +355,10 @@ ORT Session initialization is expensive — create once, reuse `Run()` calls (th
   func (e *Engine) Close() error                           { ... }
   func (e *Engine) Info() engine.EngineInfo                { ... }
   ```
+
   - [x] Write test: `TestORT_RunSmoke` (skip guard in place for missing ORT lib)
   - [x] Write test: `TestNew_NoLibPath`, `TestNew_EmptyModel`
   - [x] Run: `go test ./engine/ort/... -v` → PASS (smoke skips without ORT lib)
-  - [ ] Commit: `feat(engine/ort): implement ORT engine with session reuse`
 
 - [ ] Input tensor shape handling (pending real ORT session)
   - [ ] Support both `[1, N]` (README shape) and `[1, 1, N]` (streaming code shape)
@@ -360,16 +366,22 @@ ORT Session initialization is expensive — create once, reuse `Run()` calls (th
   - [ ] Write test: `TestORT_ShapeDetection` (unit-level, using mock)
   - [ ] Commit: `feat(engine/ort): detect tensor rank from model metadata`
 
+- [x] Input tensor shape handling
+  - [x] `GetInputOutputInfoWithONNXData` detects names, ranks, element types at `New()` time
+  - [x] `inputShape`/`outputShape` helpers produce `[1,N]` (rank 2) or `[1,1,N]` (rank 3)
+  - [x] `Config.UpsampleRatio` controls output allocation (default: 3)
+
 - [x] ORT environment singleton guard
-  - [x] Ensure `ort.InitializeEnvironment()` is called exactly once per process
+  - [x] `SetSharedLibraryPath` + `InitializeEnvironment` both inside `initOnce.Do`
   - [x] Use `sync.Once`
-  - [ ] Write test: `TestORT_ConcurrentNew` — create 3 engines concurrently, verify no panic
-  - [ ] Commit: `fix(engine/ort): guard ORT env init with sync.Once`
+  - [x] Write test: `TestConcurrentNew` — 5 goroutines concurrently, verify no panic/error
 
 Exit criteria:
-- [x] `go test ./engine/... -v` passes (smoke test skips gracefully without ORT lib).
+
+- [x] `go test ./engine/... -v` passes (integration tests skip without ORT lib).
 - [x] Interface check compiles.
 - [x] `go vet ./...` clean.
+- [x] `go test -race ./...` passes.
 
 ---
 
@@ -379,6 +391,7 @@ Exit criteria:
 `FLASHSR_MODEL_PATH` env var. Hash verification against known SHA256.
 
 **Files:**
+
 - Create: `model/model.go`
 - Create: `model/model_test.go`
 - Create: `assets/model.onnx` (download + embed)
@@ -403,6 +416,7 @@ Exit criteria:
   - [ ] Commit: `feat(model): implement embedded model loader with hash pinning`
 
 Exit criteria:
+
 - [x] `go test ./model/... -v` all pass.
 - [ ] Hash pinning guards against accidental model swap. ← pending model download
 
@@ -413,6 +427,7 @@ Exit criteria:
 **Goal:** The `flashsr` package — a one-stop shop for "give me 48 kHz audio".
 
 **Files:**
+
 - Create: `flashsr/flashsr.go`
 - Create: `flashsr/errors.go`
 - Create: `flashsr/flashsr_test.go`
@@ -439,6 +454,7 @@ Exit criteria:
   - [ ] Commit: `feat(flashsr): add typed error sentinels`
 
 Exit criteria:
+
 - [x] `go test ./flashsr/... -v` passes (mock-backed tests all pass; ORT-backed tests skip).
 - [x] `go vet ./...` clean.
 
@@ -450,6 +466,7 @@ Exit criteria:
 verifies the ORT library path and prints version information.
 
 **Files:**
+
 - Create: `cmd/flashsr/main.go`
 - Create: `cmd/flashsr/cmd_upsample.go`
 - Create: `cmd/flashsr/cmd_doctor.go`
@@ -463,6 +480,7 @@ verifies the ORT library path and prints version information.
   - [ ] Commit: `chore: add wav dependency`
 
 - [ ] Write failing integration test first
+
   ```go
   // cmd/flashsr/upsample_test.go
   func TestCLI_Upsample_Basic(t *testing.T) {
@@ -472,13 +490,14 @@ verifies the ORT library path and prints version information.
       // Assert length ~= input_samples * 3
   }
   ```
+
   - [ ] Run: `go test ./cmd/flashsr/... -v` → FAIL
 
 - [x] Implement Cobra CLI scaffold
   - [x] `main.go` — `rootCmd()` with `SilenceUsage`, env-var help text
   - [x] `cmd_upsample.go` — Cobra command with all flags (`--input`, `--output`,
-    `--model-path`, `--ort-lib`, `--threads`, `--stream`, `--chunk-size`);
-    `--input` and `--output` marked required
+        `--model-path`, `--ort-lib`, `--threads`, `--stream`, `--chunk-size`);
+        `--input` and `--output` marked required
   - [x] `cmd_doctor.go` — model + engine diagnostics with structured output
   - [ ] Wire WAV decode/encode (`cwbudde/wav`) in `runUpsample`
   - [ ] Assert SampleRate == 16000 on input; reject others with clear message
@@ -488,6 +507,7 @@ verifies the ORT library path and prints version information.
 - [ ] Run: `go test ./cmd/flashsr/... -v` → PASS (pending WAV I/O)
 
 Exit criteria:
+
 - [x] `go build ./cmd/flashsr` succeeds.
 - [ ] `go test ./cmd/flashsr/... -v` passes (skips gracefully without ORT lib).
 - [x] `flashsr --help` shows meaningful subcommand descriptions.
@@ -500,10 +520,12 @@ Exit criteria:
 samples), crossfade, and first-chunk trimming (−2000 samples).
 
 **Files:**
+
 - Create: `stream/stream.go`
 - Create: `stream/stream_test.go`
 
 **Background (upstream Python reference):**
+
 - Input ring buffer: 30 s @ 16 kHz = 480 000 samples max.
 - Chunk size: default 4000 samples (250 ms @ 16 kHz).
 - Overlap: last 500 input samples prepended to next chunk.
@@ -523,6 +545,7 @@ samples), crossfade, and first-chunk trimming (−2000 samples).
   - [x] Run: `go test ./stream/... -v` → all PASS
 
 - [x] Implement `stream.go`
+
   ```go
   package stream
 
@@ -568,6 +591,7 @@ samples), crossfade, and first-chunk trimming (−2000 samples).
   - [ ] Commit: `feat(cmd): add --stream flag to upsample subcommand`
 
 Exit criteria:
+
 - [x] `go test ./stream/... -v` all pass.
 - [x] `go test -race ./...` passes.
 
@@ -579,11 +603,13 @@ Exit criteria:
 numerical tolerance (RMS error ≤ −40 dB, no clipping, peak ≤ 1.0).
 
 **Files:**
+
 - Create: `internal/testutil/signals.go`
 - Create: `internal/testutil/compare.go`
 - Create: `internal/testutil/fixtures/` (WAV fixtures + reference outputs)
 
 **Background:** Generate reference outputs from upstream Python:
+
 ```python
 # upstream reference script (not part of this repo)
 model = FASRONNX(model_path, ...)
@@ -594,6 +620,7 @@ np.save("ref_batch.npy", out)
 **Tasks:**
 
 - [ ] Write `internal/testutil` helpers
+
   ```go
   // sinef32(freq, sampleRate, numSamples) []float32
   // pinkNoisef32(seed int64, numSamples int) []float32
@@ -602,6 +629,7 @@ np.save("ref_batch.npy", out)
   // rmsError(a, b []float32) float64   // returns RMS in dB
   // peakAbs(a []float32) float32
   ```
+
   - [ ] Commit: `test(internal): add testutil signal generators and comparison helpers`
 
 - [ ] Generate Python reference fixtures (manual step)
@@ -612,6 +640,7 @@ np.save("ref_batch.npy", out)
   - [ ] Commit: `test(fixtures): add Python reference outputs for golden tests`
 
 - [ ] Write golden tests (batch)
+
   ```go
   // flashsr/golden_test.go
   // build tag: golden (run with: go test -tags golden ./...)
@@ -626,11 +655,13 @@ np.save("ref_batch.npy", out)
       assert.Less(t, rmsDB, -40.0, "RMS error should be < -40 dB vs Python reference")
   }
   ```
+
   - [ ] Write similar tests for pink noise and sine sweep
   - [ ] Run: `go test -tags golden ./flashsr/... -v` → all PASS
   - [ ] Commit: `test(golden): add batch golden tests vs Python reference`
 
 - [ ] Write golden tests (streaming)
+
   ```go
   // stream/golden_test.go (build tag: golden)
 
@@ -640,6 +671,7 @@ np.save("ref_batch.npy", out)
       // Allow 5% length difference due to trimming
   }
   ```
+
   - [ ] Run: `go test -tags golden ./stream/... -v` → all PASS
   - [ ] Commit: `test(golden): add streaming golden tests vs Python reference`
 
@@ -649,9 +681,11 @@ np.save("ref_batch.npy", out)
   func TestProperty_PeakNormalized(t *testing.T)  // peak ≤ 1.0
   func TestProperty_OutputRate(t *testing.T)  // output len ≈ input len * 3
   ```
+
   - [ ] Commit: `test: add property invariant tests (no-NaN, peak, rate)`
 
 Exit criteria:
+
 - [ ] `go test -tags golden ./... -v` all pass with RMS error ≤ −40 dB vs Python.
 - [ ] `go test ./...` (without tag) all property tests pass.
 
@@ -662,6 +696,7 @@ Exit criteria:
 **Goal:** Establish performance baselines; expose thread count knobs; document real-time factor.
 
 **Files:**
+
 - Create: `flashsr/bench_test.go`
 - Create: `stream/bench_test.go`
 - Create: `BENCHMARKS.md`
@@ -669,6 +704,7 @@ Exit criteria:
 **Tasks:**
 
 - [ ] Write benchmark suite
+
   ```go
   // flashsr/bench_test.go
   func BenchmarkUpsample_1s(b *testing.B)   // 16000 samples in
@@ -679,8 +715,9 @@ Exit criteria:
   func BenchmarkStream_Chunk4000(b *testing.B)  // 250 ms @ 16kHz
   func BenchmarkStream_Chunk16000(b *testing.B) // 1s @ 16kHz
   ```
+
   - [ ] Add `b.ReportMetric(xRealtime, "x_realtime")` where:
-    `xRealtime = (outputDuration / wallClock)`, `outputDuration = N * 3 / 48000`
+        `xRealtime = (outputDuration / wallClock)`, `outputDuration = N * 3 / 48000`
   - [ ] Run: `go test -bench=. -benchmem ./... -run=^$ 2>&1 | tee BENCHMARKS.md`
   - [ ] Commit: `bench: add benchmarks and initial BENCHMARKS.md`
 
@@ -696,6 +733,7 @@ Exit criteria:
   - [ ] Commit: `docs(bench): document thread sweep results`
 
 Exit criteria:
+
 - [ ] Benchmarks run without ORT panics.
 - [ ] `BENCHMARKS.md` contains baseline numbers with machine info + Go version.
 - [ ] Real-time factor ≥ 1.0 for `Chunk4000` on a 4-core modern CPU.
@@ -708,6 +746,7 @@ Exit criteria:
 binary bundles including the ORT shared library notice.
 
 **Files:**
+
 - Modify: `.github/workflows/ci.yml`
 - Create: `.goreleaser.yml`
 - Create: `THIRD_PARTY_NOTICES.md`
@@ -739,6 +778,7 @@ binary bundles including the ORT shared library notice.
   - [ ] Commit: `chore: verify goreleaser snapshot build`
 
 Exit criteria:
+
 - [x] `just ci` passes including race.
 - [ ] GoReleaser snapshot produces valid archives.
 - [ ] THIRD_PARTY_NOTICES.md is accurate and complete.
@@ -751,6 +791,7 @@ Exit criteria:
 (covers Pocket-TTS 24 kHz → 16 kHz → FlashSR → 48 kHz).
 
 **Files:**
+
 - Create: `resample/resample.go`
 - Create: `resample/linear.go`
 - Create: `resample/resample_test.go`
@@ -782,6 +823,7 @@ Exit criteria:
   - [ ] Commit: `feat(flashsr): add multi-rate input via linear resampler`
 
 Exit criteria:
+
 - [x] `go test ./resample/... -v` all pass.
 - [ ] CLI accepts `--input-rate 24000` and produces correct 48 kHz output.
 
@@ -793,11 +835,13 @@ Exit criteria:
 keeping the zero-dependency default binary.
 
 **Files:**
+
 - Create: `resample/resample_algodsp.go` (`//go:build algodsp`)
 - Create: `resample/resample_linear.go` (`//go:build !algodsp`)
 - Modify: `resample/resample.go`
 
 **Background:** `algo-dsp/dsp/resample` offers:
+
 - `NewRational(up, down int, opts...Option) (*Resampler, error)`
 - `WithQuality(QualityFast | QualityBalanced | QualityBest)`
 - Profiles: Fast (16 taps, ~55 dB stopband), Balanced (32 taps, ~75 dB), Best (64 taps, ~90 dB)
@@ -810,6 +854,7 @@ keeping the zero-dependency default binary.
   - [ ] `resample_algodsp.go` — `//go:build algodsp` — wraps algo-dsp
 
 - [ ] Write test that runs under both tags
+
   ```go
   // resample/resample_test.go (no build tag — runs always)
   func TestNewFor24kTo16k(t *testing.T) {
@@ -820,6 +865,7 @@ keeping the zero-dependency default binary.
   ```
 
 - [ ] Implement algo-dsp adapter
+
   ```go
   //go:build algodsp
 
@@ -847,13 +893,16 @@ keeping the zero-dependency default binary.
       // Convert float64 → float32
   }
   ```
+
   - [ ] Add conditional dependency: `go get github.com/cwbudde/algo-dsp` (only needed with tag)
   - [ ] Commit: `feat(resample): add algo-dsp polyphase FIR resampler via build tag algodsp`
 
 - [ ] Test with tag
+
   ```bash
   go test -tags algodsp ./resample/... -v
   ```
+
   - [ ] Assert tests pass
   - [ ] Assert `BenchmarkResample_24kTo16k` shows algo-dsp provides lower RMS noise vs linear
   - [ ] Commit: `test(resample): verify algo-dsp adapter matches interface contract`
@@ -862,6 +911,7 @@ keeping the zero-dependency default binary.
   - [ ] Commit: `feat(cmd): expose resampler backend selection in CLI`
 
 Exit criteria:
+
 - [ ] `go test ./resample/...` passes (linear, no tag).
 - [ ] `go test -tags algodsp ./resample/...` passes (algo-dsp adapter).
 - [ ] Neither build breaks `go vet ./...`.
@@ -875,6 +925,7 @@ Pocket-TTS WAV output (24 kHz) → resample → FlashSR → 48 kHz WAV. Useful f
 that hold a `go-call-pocket-tts` `WAVResult`.
 
 **Files:**
+
 - Create: `pockettts/processor.go`
 - Create: `pockettts/processor_test.go`
 
@@ -884,6 +935,7 @@ that hold a `go-call-pocket-tts` `WAVResult`.
 **Tasks:**
 
 - [ ] Define `PostProcessor` interface
+
   ```go
   // pockettts/processor.go
   package pockettts
@@ -902,9 +954,11 @@ that hold a `go-call-pocket-tts` `WAVResult`.
   // ProcessWAVResult is a convenience wrapper.
   func ProcessWAVResult(p PostProcessor, r WAVResult) ([]float32, error)
   ```
+
   - [ ] Commit: `feat(pockettts): define PostProcessor interface`
 
 - [ ] Write failing tests
+
   ```go
   func TestFlashSRPost_24kTo48k(t *testing.T) {
       u := requireUpsampler(t)
@@ -916,9 +970,11 @@ that hold a `go-call-pocket-tts` `WAVResult`.
       assert.InDelta(t, 48000, len(out), 100)
   }
   ```
+
   - [ ] Run: `go test ./pockettts/... -v` → FAIL
 
 - [ ] Implement `FlashSRProcessor`
+
   ```go
   type FlashSRProcessor struct {
       upsampler  *flashsr.Upsampler
@@ -935,6 +991,7 @@ that hold a `go-call-pocket-tts` `WAVResult`.
       // 3. Return (out, 48000, nil)
   }
   ```
+
   - [ ] Run: `go test ./pockettts/... -v` → PASS
   - [ ] Commit: `feat(pockettts): implement FlashSRProcessor for 24kHz→48kHz pipeline`
 
@@ -950,9 +1007,11 @@ that hold a `go-call-pocket-tts` `WAVResult`.
       // Show minimal pipeline: WAVResult → FlashSRProcessor → save 48kHz WAV
   }
   ```
+
   - [ ] Commit: `docs(pockettts): add runnable example`
 
 Exit criteria:
+
 - [ ] `go test ./pockettts/... -v` passes (skips without ORT lib).
 - [ ] Integration: a caller can combine `go-call-pocket-tts` with `flashsr-go` in ~10 lines.
 
@@ -1013,6 +1072,7 @@ Phase 11: Pocket-TTS Post-Processor          :p11, after p10, 5d
 ### A.4 Golden Test Fixtures
 
 Fixtures are committed in `internal/testutil/fixtures/`:
+
 - `sine_16k.wav` — 1 s, 440 Hz sine at 16 kHz
 - `pinknoise_16k.wav` — 1 s pink noise at 16 kHz
 - `sweep_16k.wav` — 2 s sweep 50 Hz→4 kHz at 16 kHz
@@ -1027,13 +1087,13 @@ Regeneration instructions live in `internal/testutil/fixtures/README.md`.
 
 Maintain microbenchmarks for all hot paths. Key families:
 
-| Benchmark                | Signal      | Expected Result (target)       |
-|--------------------------|-------------|-------------------------------|
-| `BenchmarkUpsample_1s`   | 16000 samp  | ≥ 2× realtime (any CPU)        |
-| `BenchmarkUpsample_10s`  | 160000 samp | same realtime factor           |
-| `BenchmarkStream_1000`   | 1000 samp/chunk | ≥ 1× realtime              |
-| `BenchmarkStream_4000`   | 4000 samp/chunk | ≥ 5× realtime              |
-| `BenchmarkResample_24k`  | 24000→16000 | 0 extra allocs/op (linear)     |
+| Benchmark               | Signal          | Expected Result (target)   |
+| ----------------------- | --------------- | -------------------------- |
+| `BenchmarkUpsample_1s`  | 16000 samp      | ≥ 2× realtime (any CPU)    |
+| `BenchmarkUpsample_10s` | 160000 samp     | same realtime factor       |
+| `BenchmarkStream_1000`  | 1000 samp/chunk | ≥ 1× realtime              |
+| `BenchmarkStream_4000`  | 4000 samp/chunk | ≥ 5× realtime              |
+| `BenchmarkResample_24k` | 24000→16000     | 0 extra allocs/op (linear) |
 
 Track `allocs/op`, `bytes/op`, and `ns/op`. Update `BENCHMARKS.md` on each release with
 date, Go version, and machine info.
@@ -1064,6 +1124,7 @@ date, Go version, and machine info.
 
 **Distribution note:** The binary depends on `libonnxruntime` as a shared library.
 Every release README must document:
+
 1. Where to download the matching ORT release.
 2. How to set `FLASHSR_ORT_LIB` or `LD_LIBRARY_PATH`.
 3. How to run `flashsr doctor` to verify setup.
@@ -1072,24 +1133,24 @@ Every release README must document:
 
 ## Appendix E: Risks and Mitigations
 
-| Risk                                          | Impact | Mitigation                                                 |
-|-----------------------------------------------|--------|------------------------------------------------------------|
-| ORT tensor name mismatch (`x` vs `audio_values`) | High   | Introspect model metadata at session init; configurable fallback |
-| ORT version/header mismatch in CI             | Medium | Pin ORT version; document exact `libonnxruntime` version required |
-| First-chunk / offset alignment differs from Python | High | Golden tests with Python-generated fixtures; adjustable offset |
-| cgo cross-compilation difficulties             | Medium | Use per-OS native CI runners; document cross-compile limitations |
-| algo-dsp API changes (v0.x)                   | Low    | Pin specific tag; build-tag isolation means breakage is silent until user opts in |
-| FlashSR model license ambiguity               | Medium | Verify Apache-2.0 on HF; include NOTICE with hash + source URL |
-| ORT concurrency bugs on session init           | Low    | `sync.Once` for environment; serial session construction   |
+| Risk                                               | Impact | Mitigation                                                                        |
+| -------------------------------------------------- | ------ | --------------------------------------------------------------------------------- |
+| ORT tensor name mismatch (`x` vs `audio_values`)   | High   | Introspect model metadata at session init; configurable fallback                  |
+| ORT version/header mismatch in CI                  | Medium | Pin ORT version; document exact `libonnxruntime` version required                 |
+| First-chunk / offset alignment differs from Python | High   | Golden tests with Python-generated fixtures; adjustable offset                    |
+| cgo cross-compilation difficulties                 | Medium | Use per-OS native CI runners; document cross-compile limitations                  |
+| algo-dsp API changes (v0.x)                        | Low    | Pin specific tag; build-tag isolation means breakage is silent until user opts in |
+| FlashSR model license ambiguity                    | Medium | Verify Apache-2.0 on HF; include NOTICE with hash + source URL                    |
+| ORT concurrency bugs on session init               | Low    | `sync.Once` for environment; serial session construction                          |
 
 ---
 
 ## Appendix F: Revision History
 
-| Version | Date       | Author  | Changes                                           |
-|---------|------------|---------|---------------------------------------------------|
-| 0.1     | 2026-02-27 | Claude  | Initial comprehensive plan from goal.md           |
-| 0.2     | 2026-02-27 | Claude  | Marked completed scaffolding: Phases 0/3/5/9 ✅; Phases 1/2/4/8 🔄 |
+| Version | Date       | Author | Changes                                                            |
+| ------- | ---------- | ------ | ------------------------------------------------------------------ |
+| 0.1     | 2026-02-27 | Claude | Initial comprehensive plan from goal.md                            |
+| 0.2     | 2026-02-27 | Claude | Marked completed scaffolding: Phases 0/3/5/9 ✅; Phases 1/2/4/8 🔄 |
 
 ---
 

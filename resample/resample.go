@@ -29,9 +29,11 @@ func NewFor(inRate, outRate int) (Resampler, error) {
 	if inRate <= 0 || outRate <= 0 {
 		return nil, fmt.Errorf("%w: in=%d out=%d", ErrInvalidRate, inRate, outRate)
 	}
+
 	if inRate == outRate {
 		return &passthrough{}, nil
 	}
+
 	return newResampler(inRate, outRate)
 }
 
@@ -41,6 +43,7 @@ type passthrough struct{}
 func (p *passthrough) Process(in []float32) ([]float32, error) {
 	out := make([]float32, len(in))
 	copy(out, in)
+
 	return out, nil
 }
 func (p *passthrough) Reset() {}

@@ -4,6 +4,7 @@ package model
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -54,11 +55,13 @@ func Load(cfg Config) ([]byte, error) {
 		if len(embeddedModel) == 0 {
 			return nil, errors.New("model: no embedded model — set FLASHSR_MODEL_PATH or Config.Path, or embed assets/model.onnx")
 		}
+
 		data = embeddedModel
 	}
 
 	if cfg.VerifyHash && ExpectedSHA256 != "" {
-		if err := verifyHash(data, ExpectedSHA256); err != nil {
+		err := verifyHash(data, ExpectedSHA256)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -68,9 +71,11 @@ func Load(cfg Config) ([]byte, error) {
 
 func verifyHash(data []byte, want string) error {
 	sum := sha256.Sum256(data)
-	got := fmt.Sprintf("%x", sum[:])
+
+	got := hex.EncodeToString(sum[:])
 	if got != want {
 		return fmt.Errorf("model: hash mismatch: got %s, want %s", got, want)
 	}
+
 	return nil
 }

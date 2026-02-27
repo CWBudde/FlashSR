@@ -34,6 +34,7 @@ func (c Config) chunkSize() int {
 	if c.ChunkSize > 0 {
 		return c.ChunkSize
 	}
+
 	return defaultChunkSize
 }
 
@@ -41,6 +42,7 @@ func (c Config) overlap() int {
 	if c.Overlap > 0 {
 		return c.Overlap
 	}
+
 	return defaultOverlap
 }
 
@@ -48,6 +50,7 @@ func (c Config) bufferCap() int {
 	if c.BufferCap > 0 {
 		return c.BufferCap
 	}
+
 	return defaultBufferCap
 }
 
@@ -61,7 +64,7 @@ type Streamer struct {
 	outputBuf []float32 // processed output waiting to be Read
 
 	// crossfade state
-	prevTail  []float32 // last outOverlap samples of previous output chunk
+	prevTail   []float32 // last outOverlap samples of previous output chunk
 	firstChunk bool
 }
 
@@ -85,10 +88,12 @@ func (s *Streamer) Write(samples []float32) error {
 // Returns (n, io.EOF) when Flush has been called and the buffer is empty.
 func (s *Streamer) Read(out []float32) (int, error) {
 	n := copy(out, s.outputBuf)
+
 	s.outputBuf = s.outputBuf[n:]
 	if n == 0 {
 		return 0, io.EOF
 	}
+
 	return n, nil
 }
 
@@ -103,6 +108,7 @@ func (s *Streamer) Flush() error {
 	for len(s.inputBuf) < chunk {
 		s.inputBuf = append(s.inputBuf, 0)
 	}
+
 	return s.drainChunks()
 }
 
@@ -122,11 +128,14 @@ func (s *Streamer) Buffered() int { return len(s.outputBuf) }
 func (s *Streamer) drainChunks() error {
 	chunk := s.cfg.chunkSize()
 	for len(s.inputBuf) >= chunk {
-		if err := s.processChunk(s.inputBuf[:chunk]); err != nil {
+		err := s.processChunk(s.inputBuf[:chunk])
+		if err != nil {
 			return err
 		}
+
 		s.inputBuf = s.inputBuf[chunk:]
 	}
+
 	return nil
 }
 
@@ -181,10 +190,12 @@ func (s *Streamer) processChunk(chunk []float32) error {
 		} else {
 			aligned = nil
 		}
+
 		s.firstChunk = false
 	}
 
 	s.outputBuf = append(s.outputBuf, aligned...)
+
 	return nil
 }
 
@@ -194,25 +205,21 @@ func (s *Streamer) applyCrossfade(new []float32, overlapOut int) []float32 {
 	if len(s.prevTail) == 0 {
 		return new
 	}
+
 	if len(new) == 0 {
 		return new
 	}
 
-	n := overlapOut
-	if n > len(s.prevTail) {
-		n = len(s.prevTail)
-	}
-	if n > len(new) {
-		n = len(new)
-	}
+	n := min(min(overlapOut, len(s.prevTail)), len(new))
 
 	out := make([]float32, len(new))
 	copy(out, new)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		t := float32(i) / float32(n)
 		out[i] = s.prevTail[i]*(1-t) + new[i]*t
 	}
+
 	return out
 }
 
@@ -220,8 +227,10 @@ func clone(s []float32) []float32 {
 	if s == nil {
 		return nil
 	}
+
 	c := make([]float32, len(s))
 	copy(c, s)
+
 	return c
 }
 

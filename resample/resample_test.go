@@ -12,11 +12,14 @@ func TestNewFor_SameRate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	in := []float32{0.1, 0.2, 0.3}
+
 	out, err := r.Process(in)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(out) != len(in) {
 		t.Fatalf("passthrough: got %d samples, want %d", len(out), len(in))
 	}
@@ -26,6 +29,7 @@ func TestNewFor_InvalidRate(t *testing.T) {
 	if _, err := resample.NewFor(0, 48000); err == nil {
 		t.Fatal("expected error for inRate=0")
 	}
+
 	if _, err := resample.NewFor(48000, 0); err == nil {
 		t.Fatal("expected error for outRate=0")
 	}
@@ -36,7 +40,9 @@ func TestLinear_24kTo16k_Length(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	in := makeSine(440, 24000, 24000) // 1s @ 24kHz
+
 	out, err := r.Process(in)
 	if err != nil {
 		t.Fatal(err)
@@ -52,11 +58,14 @@ func TestLinear_16kTo48k_Length(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	in := makeSine(440, 16000, 16000) // 1s @ 16kHz
+
 	out, err := r.Process(in)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if abs(len(out)-48000) > 2 {
 		t.Fatalf("16k→48k: got %d samples, want ≈48000", len(out))
 	}
@@ -67,9 +76,11 @@ func TestLinear_Reset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	in := makeSine(440, 24000, 4800)
 	out1, _ := r.Process(in)
 	r.Reset()
+
 	out2, _ := r.Process(in)
 	if len(out1) != len(out2) {
 		t.Fatalf("after Reset, lengths differ: %d vs %d", len(out1), len(out2))
@@ -87,12 +98,15 @@ func TestLinear_StreamingNoBoundaryJumps(t *testing.T) {
 	in := makeSine(440, 24000, totalIn)
 
 	var all []float32
+
 	for i := 0; i < totalIn; i += chunkSize {
 		chunk := in[i : i+chunkSize]
+
 		out, err := r.Process(chunk)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		all = append(all, out...)
 	}
 
@@ -117,6 +131,7 @@ func makeSine(freq, sampleRate, numSamples int) []float32 {
 	for i := range out {
 		out[i] = float32(math.Sin(2 * math.Pi * float64(freq) * float64(i) / float64(sampleRate)))
 	}
+
 	return out
 }
 
@@ -124,6 +139,7 @@ func abs(x int) int {
 	if x < 0 {
 		return -x
 	}
+
 	return x
 }
 
@@ -131,5 +147,6 @@ func abs32(x float32) float32 {
 	if x < 0 {
 		return -x
 	}
+
 	return x
 }

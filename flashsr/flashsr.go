@@ -49,7 +49,7 @@ func New(cfg Config) (*Upsampler, error) {
 		VerifyHash: cfg.VerifyModelHash,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrModelLoad, err)
+		return nil, fmt.Errorf("%w: %w", ErrModelLoad, err)
 	}
 
 	eng, err := ort.New(modelBytes, ort.Config{
@@ -60,7 +60,7 @@ func New(cfg Config) (*Upsampler, error) {
 		OutputName:      cfg.OutputName,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrEngineInit, err)
+		return nil, fmt.Errorf("%w: %w", ErrEngineInit, err)
 	}
 
 	return &Upsampler{eng: eng}, nil
@@ -80,9 +80,10 @@ func (u *Upsampler) Upsample16kTo48k(x []float32) ([]float32, error) {
 	}
 
 	clamped := clamp(x)
+
 	out, err := u.eng.Run(clamped)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInferFailed, err)
+		return nil, fmt.Errorf("%w: %w", ErrInferFailed, err)
 	}
 
 	return peakNormalize(out, 0.999), nil
@@ -107,8 +108,10 @@ func clamp(x []float32) []float32 {
 		} else if v < -1 {
 			v = -1
 		}
+
 		out[i] = v
 	}
+
 	return out
 }
 
@@ -121,13 +124,17 @@ func peakNormalize(x []float32, target float32) []float32 {
 			peak = a
 		}
 	}
+
 	if peak == 0 {
 		return x
 	}
+
 	scale := target / peak
+
 	out := make([]float32, len(x))
 	for i, v := range x {
 		out[i] = v * scale
 	}
+
 	return out
 }

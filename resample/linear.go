@@ -42,6 +42,7 @@ func (r *linearResampler) Process(in []float32) ([]float32, error) {
 		} else {
 			a = in[idx-1]
 		}
+
 		b = in[idx]
 
 		out = append(out, a+float32(frac)*(b-a))
