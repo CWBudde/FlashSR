@@ -30,6 +30,7 @@ Environment variables:
 
 	cmd.AddCommand(newUpsampleCmd())
 	cmd.AddCommand(newDoctorCmd())
+	cmd.AddCommand(newModelCmd())
 
 	return cmd
 }

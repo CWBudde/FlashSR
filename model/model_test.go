@@ -7,12 +7,16 @@ import (
 	"github.com/MeKo-Christian/flashsr-go/model"
 )
 
-func TestLoad_NoEmbedNoPath(t *testing.T) {
+func TestLoad_Embedded(t *testing.T) {
 	t.Setenv("FLASHSR_MODEL_PATH", "")
 
-	_, err := model.Load(model.Config{})
-	if err == nil {
-		t.Fatal("expected error when no model available")
+	data, err := model.Load(model.Config{})
+	if err != nil {
+		t.Fatalf("Load with no path should use embedded model: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Fatal("embedded model is empty")
 	}
 }
 
@@ -67,11 +71,6 @@ func TestLoad_EnvOverride(t *testing.T) {
 }
 
 func TestLoad_HashVerification_BadData(t *testing.T) {
-	// ExpectedSHA256 is empty in this stage, so hash check is skipped.
-	// Once Phase 2 pins the hash this test will exercise the mismatch path.
-	if model.ExpectedSHA256 == "" {
-		t.Skip("ExpectedSHA256 not set yet — skipping hash mismatch test")
-	}
 
 	data := []byte("wrong model bytes")
 

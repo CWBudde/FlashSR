@@ -187,7 +187,7 @@ type Engine interface {
 ```plain
 Phase 0:  Bootstrap & Governance                     [3 days]   ✅ Complete
 Phase 1:  Engine Interface & ORT Binding             [5 days]   ✅ Complete
-Phase 2:  Model Handling (embed + path override)     [2 days]   🔄 In Progress (loader + tests done; model download + go:embed pending)
+Phase 2:  Model Handling (embed + path override)     [2 days]   ✅ Complete
 Phase 3:  Public Library & Batch Inference           [3 days]   ✅ Complete
 Phase 4:  WAV I/O + CLI (upsample + doctor)          [4 days]   🔄 In Progress (Cobra scaffold done; WAV I/O pending)
 Phase 5:  Streaming (Buffer, Overlap, Crossfade)     [5 days]   ✅ Complete
@@ -360,11 +360,11 @@ ORT Session initialization is expensive — create once, reuse `Run()` calls (th
   - [x] Write test: `TestNew_NoLibPath`, `TestNew_EmptyModel`
   - [x] Run: `go test ./engine/ort/... -v` → PASS (smoke skips without ORT lib)
 
-- [ ] Input tensor shape handling (pending real ORT session)
-  - [ ] Support both `[1, N]` (README shape) and `[1, 1, N]` (streaming code shape)
-  - [ ] Detect rank from model metadata at session init time
-  - [ ] Write test: `TestORT_ShapeDetection` (unit-level, using mock)
-  - [ ] Commit: `feat(engine/ort): detect tensor rank from model metadata`
+- [x] Input tensor shape handling (pending real ORT session)
+  - [x] Support both `[1, N]` (README shape) and `[1, 1, N]` (streaming code shape)
+  - [x] Detect rank from model metadata at session init time
+  - [x] Write test: `TestORT_ShapeDetection` (unit-level, using mock)
+  - [x] Commit: `feat(engine/ort): detect tensor rank from model metadata`
 
 - [x] Input tensor shape handling
   - [x] `GetInputOutputInfoWithONNXData` detects names, ranks, element types at `New()` time
@@ -398,27 +398,33 @@ Exit criteria:
 
 **Tasks:**
 
-- [ ] Download model
-  - [ ] `curl -L -o assets/model.onnx "https://huggingface.co/hance-ai/FlashSR/resolve/main/onnx/model.onnx"`
-  - [ ] Verify SHA256 matches LFS pointer: `sha256sum assets/model.onnx`
-  - [ ] Populate `ExpectedSHA256` constant in `model.go`
-  - [ ] Uncomment `//go:embed ../assets/model.onnx` in `model.go`
-  - [ ] Commit: `chore(assets): embed FlashSR ONNX model (Apache-2.0)`
+- [x] Download model
+  - [x] `flashsr model download` → `assets/model.onnx` (487 kB, YatharthS/FlashSR public mirror)
+  - [x] Verify SHA256: `e255c76b227f16f7f392cc43677c38bd2c5aa129f042a2ba3eb03fb29e470c7a`
+  - [x] Populate `ExpectedSHA256` constant in `model.go`
+  - [x] Enable embed via `assets/assets.go` package (go:embed constraint: no `../`)
+  - [x] Commit: `chore(assets): embed FlashSR ONNX model (Apache-2.0)`
+
+- [x] Implement `model download` CLI subcommand (`model/download.go`, `cmd/flashsr/cmd_model*.go`)
+  - [x] HF download with progress reporting + SHA256 verification
+  - [x] Atomic write (`.tmp` → rename)
+  - [x] Skip-if-already-present via ETag SHA256
+  - [x] `AccessDeniedError` for 401/403
+  - [x] Default repo: `YatharthS/FlashSR` (public mirror; hance-ai/FlashSR is gated)
 
 - [x] Implement model loader (`model/model.go`)
   - [x] Priority chain: env → Config.Path → embedded
   - [x] `verifyHash` helper using `crypto/sha256`
-  - [x] Write test: `TestLoad_NoEmbedNoPath` — error when nothing available
+  - [x] Write test: `TestLoad_Embedded` — embedded model loads successfully
   - [x] Write test: `TestLoad_FromPath` — loads from temp file
   - [x] Write test: `TestLoad_EnvOverride` — env takes priority over Config.Path
-  - [x] Write test: `TestLoad_HashVerification_BadData` — skip guard until SHA256 pinned
+  - [x] Write test: `TestLoad_HashVerification_BadData` — hash mismatch returns error
   - [x] Run: `go test ./model/... -v` → all PASS
-  - [ ] Commit: `feat(model): implement embedded model loader with hash pinning`
 
 Exit criteria:
 
 - [x] `go test ./model/... -v` all pass.
-- [ ] Hash pinning guards against accidental model swap. ← pending model download
+- [x] Hash pinning guards against accidental model swap.
 
 ---
 
@@ -448,10 +454,10 @@ Exit criteria:
   - [x] `NewWithEngine(eng engine.Engine)` for mock-based tests
   - [x] `Upsample16kTo48k` with clamp + `eng.Run` + peak-norm
   - [x] `EngineInfo()`, `Close()`
-  - [ ] Commit: `feat(flashsr): implement Upsampler with batch Upsample16kTo48k`
+  - [x] Commit: `feat(flashsr): implement Upsampler with batch Upsample16kTo48k`
 
 - [x] Write `errors.go` with `ErrModelLoad`, `ErrEngineInit`, `ErrInferFailed`
-  - [ ] Commit: `feat(flashsr): add typed error sentinels`
+  - [x] Commit: `feat(flashsr): add typed error sentinels`
 
 Exit criteria:
 
@@ -476,40 +482,31 @@ verifies the ORT library path and prints version information.
 
 **Tasks:**
 
-- [ ] Add wav dependency: `go get github.com/cwbudde/wav`
-  - [ ] Commit: `chore: add wav dependency`
+- [x] Add wav dependency: `go get github.com/cwbudde/wav`
 
-- [ ] Write failing integration test first
-
-  ```go
-  // cmd/flashsr/upsample_test.go
-  func TestCLI_Upsample_Basic(t *testing.T) {
-      // Write a 0.5s 16kHz sine WAV to tmp
-      // Run: flashsr upsample --input tmp.wav --output out.wav
-      // Read out.wav, assert sample rate == 48000
-      // Assert length ~= input_samples * 3
-  }
-  ```
-
-  - [ ] Run: `go test ./cmd/flashsr/... -v` → FAIL
+- [x] Write tests (`cmd/flashsr/upsample_test.go`)
+  - [x] `TestWAVRoundtrip` — encode/decode roundtrip without ORT
+  - [x] `TestUpsample_RejectsNon16k` — 44100 Hz input rejected with clear error
+  - [x] `TestUpsample_MockEngine` — full WAV I/O pipeline via mock engine (no ORT)
+  - [x] `TestCLI_Upsample_Basic` — full pipeline (skips without `FLASHSR_ORT_LIB`)
+  - [x] `TestUpsample_Streaming` — streaming path (skips without `FLASHSR_ORT_LIB`)
 
 - [x] Implement Cobra CLI scaffold
   - [x] `main.go` — `rootCmd()` with `SilenceUsage`, env-var help text
-  - [x] `cmd_upsample.go` — Cobra command with all flags (`--input`, `--output`,
-        `--model-path`, `--ort-lib`, `--threads`, `--stream`, `--chunk-size`);
-        `--input` and `--output` marked required
+  - [x] `cmd_upsample.go` — flags + `runUpsample` + `runUpsampleWithUpsampler`
   - [x] `cmd_doctor.go` — model + engine diagnostics with structured output
-  - [ ] Wire WAV decode/encode (`cwbudde/wav`) in `runUpsample`
-  - [ ] Assert SampleRate == 16000 on input; reject others with clear message
-  - [ ] Commit: `feat(cmd): implement flashsr upsample and doctor subcommands`
+  - [x] `wav.go` — `readWAV` / `writeWAV` helpers using `cwbudde/wav`
+  - [x] Assert SampleRate == 16000 on input; reject others with clear message
+  - [x] Streaming mode wired: `stream.New(u.Engine(), ...)` via new `Engine()` accessor
+  - [x] `flashsr.Upsampler.Engine()` accessor added to expose engine for streaming
 
 - [x] `go build ./cmd/flashsr` succeeds
-- [ ] Run: `go test ./cmd/flashsr/... -v` → PASS (pending WAV I/O)
+- [x] Run: `go test ./cmd/flashsr/... -v` → 3 PASS, 2 SKIP (ORT)
 
 Exit criteria:
 
 - [x] `go build ./cmd/flashsr` succeeds.
-- [ ] `go test ./cmd/flashsr/... -v` passes (skips gracefully without ORT lib).
+- [x] `go test ./cmd/flashsr/... -v` passes (skips gracefully without ORT lib).
 - [x] `flashsr --help` shows meaningful subcommand descriptions.
 
 ---

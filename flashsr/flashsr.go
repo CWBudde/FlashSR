@@ -94,6 +94,12 @@ func (u *Upsampler) EngineInfo() engine.EngineInfo {
 	return u.eng.Info()
 }
 
+// Engine returns the underlying inference engine.
+// Useful for passing to stream.New in streaming mode.
+func (u *Upsampler) Engine() engine.Engine {
+	return u.eng
+}
+
 // Close releases the engine session resources.
 func (u *Upsampler) Close() error {
 	return u.eng.Close()

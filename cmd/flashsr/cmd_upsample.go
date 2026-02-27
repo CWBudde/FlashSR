@@ -10,6 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const inputSampleRate = 16000
+const outputSampleRate = 48000
+
 type upsampleFlags struct {
 	input     string
 	output    string
@@ -51,13 +54,24 @@ Example:
 	return cmd
 }
 
+// runUpsample is the top-level handler: validates flags, builds an Upsampler,
+// then delegates to runUpsampleWithUpsampler.
 func runUpsample(f upsampleFlags) error {
-	// Validate input file exists.
 	if _, err := os.Stat(f.input); errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("input file not found: %s", f.input)
 	}
 
-	// Build upsampler.
+	// Reject non-16kHz input early (before loading the model) so the error
+	// message is clear even without an ORT library present.
+	_, sr, err := readWAV(f.input)
+	if err != nil {
+		return fmt.Errorf("read input: %w", err)
+	}
+
+	if sr != inputSampleRate {
+		return fmt.Errorf("input sample rate is %d Hz; FlashSR requires %d Hz", sr, inputSampleRate)
+	}
+
 	u, err := flashsr.New(flashsr.Config{
 		ModelPath:       f.modelPath,
 		ORTLibPath:      f.ortLib,
@@ -65,26 +79,73 @@ func runUpsample(f upsampleFlags) error {
 		NumThreadsInter: f.threads,
 	})
 	if err != nil {
-		return fmt.Errorf("init: %w", err)
+		return fmt.Errorf("init engine: %w", err)
 	}
 	defer u.Close()
 
-	// TODO(phase4): decode input WAV → []float32 via cwbudde/wav.
-	// For now, print a placeholder.
-	fmt.Fprintf(os.Stderr, "reading %s ...\n", f.input)
-	fmt.Fprintf(os.Stderr, "NOTE: WAV I/O not yet wired (Phase 4)\n")
+	return runUpsampleWithUpsampler(u, f)
+}
 
-	if f.streaming {
-		st := stream.New(nil, stream.Config{ // nil engine placeholder
-			ChunkSize: f.chunkSize,
-		})
-		_ = st
-
-		fmt.Fprintln(os.Stderr, "streaming mode selected")
+// runUpsampleWithUpsampler performs the actual WAV decode → upsample → WAV
+// encode pipeline. It accepts a pre-built Upsampler so tests can inject a mock.
+func runUpsampleWithUpsampler(u *flashsr.Upsampler, f upsampleFlags) error {
+	pcm, _, err := readWAV(f.input)
+	if err != nil {
+		return fmt.Errorf("read input WAV: %w", err)
 	}
 
-	// TODO(phase4): write output WAV.
-	fmt.Fprintf(os.Stderr, "would write 48 kHz output to %s\n", f.output)
+	var out []float32
+
+	if f.streaming {
+		out, err = upsampleStreaming(u, pcm, f.chunkSize)
+	} else {
+		out, err = u.Upsample16kTo48k(pcm)
+	}
+
+	if err != nil {
+		return fmt.Errorf("upsample: %w", err)
+	}
+
+	if err := writeWAV(f.output, out, outputSampleRate); err != nil {
+		return fmt.Errorf("write output WAV: %w", err)
+	}
+
+	fmt.Fprintf(os.Stdout, "%s → %s  (%d → %d samples)\n",
+		f.input, f.output, len(pcm), len(out))
 
 	return nil
+}
+
+// upsampleStreaming processes pcm in chunks via stream.Streamer and collects
+// all output samples.
+func upsampleStreaming(u *flashsr.Upsampler, pcm []float32, chunkSize int) ([]float32, error) {
+	st := stream.New(u.Engine(), stream.Config{ChunkSize: chunkSize})
+	defer st.Reset()
+
+	// Feed input in chunkSize pieces.
+	for i := 0; i < len(pcm); i += chunkSize {
+		end := i + chunkSize
+		if end > len(pcm) {
+			end = len(pcm)
+		}
+
+		if err := st.Write(pcm[i:end]); err != nil {
+			return nil, fmt.Errorf("stream write: %w", err)
+		}
+	}
+
+	// Flush any remaining partial chunk.
+	if err := st.Flush(); err != nil {
+		return nil, fmt.Errorf("stream flush: %w", err)
+	}
+
+	// Drain output buffer.
+	out := make([]float32, st.Buffered())
+	n, err := st.Read(out)
+
+	if err != nil {
+		return nil, fmt.Errorf("stream read: %w", err)
+	}
+
+	return out[:n], nil
 }
