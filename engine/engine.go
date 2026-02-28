@@ -2,6 +2,8 @@
 package engine
 
 // EngineInfo describes the loaded model and runtime configuration.
+//
+//nolint:revive // Public API: engine.EngineInfo is intentionally explicit.
 type EngineInfo struct {
 	InputName  string
 	OutputName string

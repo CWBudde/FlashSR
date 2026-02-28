@@ -7,12 +7,12 @@ versions (where applicable), licenses, and the applicable license texts.
 
 ## 1. FlashSR ONNX Model
 
-| Field   | Value |
-| ------- | ----- |
+| Field   | Value                                                               |
+| ------- | ------------------------------------------------------------------- |
 | Origin  | `hance-ai/FlashSR` (HuggingFace) — mirrored via `YatharthS/FlashSR` |
-| File    | `assets/model.onnx` |
-| License | Apache License, Version 2.0 |
-| SHA256  | `e255c76b227f16f7f392cc43677c38bd2c5aa129f042a2ba3eb03fb29e470c7a` |
+| File    | `assets/model.onnx`                                                 |
+| License | Apache License, Version 2.0                                         |
+| SHA256  | `e255c76b227f16f7f392cc43677c38bd2c5aa129f042a2ba3eb03fb29e470c7a`  |
 
 ```
                                  Apache License
@@ -38,11 +38,11 @@ versions (where applicable), licenses, and the applicable license texts.
 
 ## 2. ONNX Runtime
 
-| Field   | Value |
-| ------- | ----- |
+| Field   | Value                                                |
+| ------- | ---------------------------------------------------- |
 | Module  | (system shared library — not a Go module dependency) |
-| License | MIT License |
-| Source  | https://github.com/microsoft/onnxruntime |
+| License | MIT License                                          |
+| Source  | https://github.com/microsoft/onnxruntime             |
 
 ```
 MIT License
@@ -72,11 +72,11 @@ SOFTWARE.
 
 ## 3. onnxruntime_go
 
-| Field   | Value |
-| ------- | ----- |
-| Module  | `github.com/yalue/onnxruntime_go` |
-| Version | `v1.26.0` |
-| License | MIT License |
+| Field   | Value                                   |
+| ------- | --------------------------------------- |
+| Module  | `github.com/yalue/onnxruntime_go`       |
+| Version | `v1.26.0`                               |
+| License | MIT License                             |
 | Source  | https://github.com/yalue/onnxruntime_go |
 
 ```
@@ -107,11 +107,11 @@ SOFTWARE.
 
 ## 4. algo-dsp (vendored source)
 
-| Field   | Value |
-| ------- | ----- |
-| Origin  | `github.com/cwbudde/algo-dsp` |
-| Files   | `resample/fir_design.go` (derived / adapted) |
-| License | MIT License |
+| Field   | Value                                                                                                                      |
+| ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Origin  | `github.com/cwbudde/algo-dsp`                                                                                              |
+| Files   | `resample/fir_design.go` (derived / adapted)                                                                               |
+| License | MIT License                                                                                                                |
 | Note    | **Not a Go module dependency.** Only the polyphase FIR design math was adapted and vendored into `resample/fir_design.go`. |
 
 ```
@@ -142,12 +142,12 @@ SOFTWARE.
 
 ## 5. cwbudde/wav
 
-| Field   | Value |
-| ------- | ----- |
-| Module  | `github.com/cwbudde/wav` |
-| Version | `v0.0.0-20260207095734-97d781a5fb8a` |
-| License | MIT License |
-| Source  | https://github.com/cwbudde/wav |
+| Field   | Value                                                                  |
+| ------- | ---------------------------------------------------------------------- |
+| Module  | `github.com/cwbudde/wav`                                               |
+| Version | `v0.0.0-20260207095734-97d781a5fb8a`                                   |
+| License | MIT License                                                            |
+| Source  | https://github.com/cwbudde/wav                                         |
 | Note    | Used only in `cmd/flashsr` (CLI WAV I/O); not part of the library API. |
 
 ```
@@ -178,12 +178,12 @@ SOFTWARE.
 
 ## 6. go-audio/audio
 
-| Field   | Value |
-| ------- | ----- |
-| Module  | `github.com/go-audio/audio` |
-| Version | `v1.0.0` |
-| License | MIT License |
-| Source  | https://github.com/go-audio/audio |
+| Field   | Value                                   |
+| ------- | --------------------------------------- |
+| Module  | `github.com/go-audio/audio`             |
+| Version | `v1.0.0`                                |
+| License | MIT License                             |
+| Source  | https://github.com/go-audio/audio       |
 | Note    | Transitive dependency of `cwbudde/wav`. |
 
 ```
@@ -214,11 +214,11 @@ SOFTWARE.
 
 ## 7. cobra
 
-| Field   | Value |
-| ------- | ----- |
-| Module  | `github.com/spf13/cobra` |
-| Version | `v1.10.2` |
-| License | Apache License, Version 2.0 |
+| Field   | Value                          |
+| ------- | ------------------------------ |
+| Module  | `github.com/spf13/cobra`       |
+| Version | `v1.10.2`                      |
+| License | Apache License, Version 2.0    |
 | Source  | https://github.com/spf13/cobra |
 
 ```
@@ -243,4 +243,4 @@ SOFTWARE.
 
 ---
 
-*This file was generated from `go.mod` and manually verified. Update after any dependency change.*
+_This file was generated from `go.mod` and manually verified. Update after any dependency change._

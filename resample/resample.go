@@ -1,8 +1,6 @@
 // Package resample provides sample-rate conversion for FlashSR pipelines.
 //
-// Default build: stateful linear interpolating resampler (zero external dependencies).
-// Build with -tags algodsp to swap in github.com/cwbudde/algo-dsp/dsp/resample
-// (polyphase FIR, quality modes) for higher output quality.
+// Prefer NewFor for fast linear resampling, or NewPolyphase for higher quality.
 package resample
 
 import (

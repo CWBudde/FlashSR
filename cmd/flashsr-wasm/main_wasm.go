@@ -10,10 +10,9 @@ import (
 	"strings"
 	"syscall/js"
 
-	goaudio "github.com/go-audio/audio"
-
 	"github.com/MeKo-Christian/flashsr-go/resample"
 	"github.com/cwbudde/wav"
+	goaudio "github.com/go-audio/audio"
 )
 
 const (

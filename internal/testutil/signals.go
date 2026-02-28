@@ -46,7 +46,7 @@ func PinkNoise(seed int64, n int) []float32 {
 		k := i + 1
 		bit := k & (-k) // lowest set bit
 
-		for b := 0; b < numRows; b++ {
+		for b := range numRows {
 			if bit>>b&1 == 1 {
 				running -= rows[b]
 				rows[b] = rng.Float64()*2 - 1
@@ -66,6 +66,7 @@ func PinkNoise(seed int64, n int) []float32 {
 // PeakAbs returns the absolute peak value of a.
 func PeakAbs(a []float32) float32 {
 	peak := float32(0)
+
 	for _, v := range a {
 		if v < 0 {
 			v = -v

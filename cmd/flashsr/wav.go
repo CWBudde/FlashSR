@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	goaudio "github.com/go-audio/audio"
-
 	"github.com/cwbudde/wav"
+	goaudio "github.com/go-audio/audio"
 )
 
 const (
@@ -23,6 +22,7 @@ func readWAV(path string) (samples []float32, sampleRate int, err error) {
 	if err != nil {
 		return nil, 0, fmt.Errorf("open WAV: %w", err)
 	}
+
 	defer func() { _ = f.Close() }()
 
 	dec := wav.NewDecoder(f)
@@ -56,12 +56,14 @@ func writeWAV(path string, samples []float32, sampleRate int) error {
 		SourceBitDepth: wavBitDepth,
 	}
 
-	if err := enc.Write(buf); err != nil {
+	err = enc.Write(buf)
+	if err != nil {
 		_ = f.Close()
 		return fmt.Errorf("encode WAV PCM: %w", err)
 	}
 
-	if err := enc.Close(); err != nil {
+	err = enc.Close()
+	if err != nil {
 		_ = f.Close()
 		return fmt.Errorf("close WAV encoder: %w", err)
 	}

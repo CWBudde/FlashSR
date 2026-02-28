@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -98,7 +99,8 @@ func Download(opts DownloadOptions) (DownloadResult, error) {
 		return DownloadResult{}, fmt.Errorf("model: resolve out path: %w", err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
+	err = os.MkdirAll(filepath.Dir(absPath), 0o755)
+	if err != nil {
 		return DownloadResult{}, fmt.Errorf("model: create output directory: %w", err)
 	}
 
@@ -130,14 +132,14 @@ func Download(opts DownloadOptions) (DownloadResult, error) {
 
 // downloadToFile streams url to outPath via a .tmp sibling, returns sha256.
 func downloadToFile(client *http.Client, url, token, outPath string, stdout io.Writer) (string, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("model: build request: %w", err)
 	}
 
 	setAuthHeader(req, token)
 
-	resp, err := client.Do(req) //nolint:bodyclose // closed below
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("model: download request failed: %w", err)
 	}
@@ -183,17 +185,7 @@ func downloadToFile(client *http.Client, url, token, outPath string, stdout io.W
 			}
 
 			written += int64(wn)
-
-			if time.Since(lastPrint) > 700*time.Millisecond {
-				if total > 0 {
-					pct := float64(written) * 100 / float64(total)
-					_, _ = fmt.Fprintf(stdout, "  %.1f%% (%d / %d bytes)\n", pct, written, total)
-				} else {
-					_, _ = fmt.Fprintf(stdout, "  %d bytes\n", written)
-				}
-
-				lastPrint = time.Now()
-			}
+			maybePrintDownloadProgress(stdout, written, total, &lastPrint)
 		}
 
 		if readErr == io.EOF {
@@ -208,12 +200,14 @@ func downloadToFile(client *http.Client, url, token, outPath string, stdout io.W
 		}
 	}
 
-	if err := fh.Close(); err != nil {
+	err = fh.Close()
+	if err != nil {
 		_ = os.Remove(tmp)
 		return "", fmt.Errorf("model: close temp file: %w", err)
 	}
 
-	if err := os.Rename(tmp, outPath); err != nil {
+	err = os.Rename(tmp, outPath)
+	if err != nil {
 		_ = os.Remove(tmp)
 		return "", fmt.Errorf("model: rename temp file: %w", err)
 	}
@@ -221,19 +215,38 @@ func downloadToFile(client *http.Client, url, token, outPath string, stdout io.W
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+func maybePrintDownloadProgress(stdout io.Writer, written, total int64, lastPrint *time.Time) {
+	if lastPrint == nil {
+		return
+	}
+
+	if time.Since(*lastPrint) <= 700*time.Millisecond {
+		return
+	}
+
+	if total > 0 {
+		pct := float64(written) * 100 / float64(total)
+		_, _ = fmt.Fprintf(stdout, "  %.1f%% (%d / %d bytes)\n", pct, written, total)
+	} else {
+		_, _ = fmt.Fprintf(stdout, "  %d bytes\n", written)
+	}
+
+	*lastPrint = time.Now()
+}
+
 // resolveServerHash issues a HEAD request and extracts the SHA256 from ETag
 // headers that Hugging Face LFS populates (X-Linked-Etag, Etag).
 func resolveServerHash(client *http.Client, url, token string) (string, error) {
-	req, err := http.NewRequest(http.MethodHead, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodHead, url, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("model: build HEAD request: %w", err)
 	}
 
 	setAuthHeader(req, token)
 
-	resp, err := client.Do(req) //nolint:bodyclose
+	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("model: HEAD request failed: %w", err)
 	}
 
 	defer func() { _ = resp.Body.Close() }()
@@ -261,7 +274,9 @@ func existingFileHash(path string) (string, bool) {
 	defer func() { _ = f.Close() }()
 
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+
+	_, err = io.Copy(h, f)
+	if err != nil {
 		return "", false
 	}
 
@@ -311,7 +326,7 @@ func isSHA256Hex(v string) bool {
 	}
 
 	for _, c := range v {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
 			return false
 		}
 	}

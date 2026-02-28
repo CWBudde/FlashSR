@@ -28,7 +28,8 @@ func TestLoad_FromPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := f.Write(data); err != nil {
+	_, err = f.Write(data)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -52,7 +53,8 @@ func TestLoad_EnvOverride(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := f.Write(data); err != nil {
+	_, err = f.Write(data)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,7 +73,6 @@ func TestLoad_EnvOverride(t *testing.T) {
 }
 
 func TestLoad_HashVerification_BadData(t *testing.T) {
-
 	data := []byte("wrong model bytes")
 
 	f, err := os.CreateTemp(t.TempDir(), "model*.onnx")
@@ -79,7 +80,8 @@ func TestLoad_HashVerification_BadData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := f.Write(data); err != nil {
+	_, err = f.Write(data)
+	if err != nil {
 		t.Fatal(err)
 	}
 

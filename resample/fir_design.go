@@ -1,8 +1,9 @@
+package resample
+
 // Polyphase FIR filter design for sample-rate conversion.
 //
 // Adapted from github.com/cwbudde/algo-dsp (MIT License).
 // All arithmetic is kept in float64 for numerical accuracy.
-package resample
 
 import (
 	"errors"

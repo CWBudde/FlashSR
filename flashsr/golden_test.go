@@ -3,6 +3,7 @@
 package flashsr_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,7 +41,7 @@ func requireFixture(t *testing.T, name string) []float32 {
 	path := filepath.Join(fixturesDir, name)
 
 	data, err := testutil.LoadNPYFloat32(path)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		t.Skipf("fixture %q not found — run scripts/gen_fixtures.py to generate", name)
 	}
 
@@ -69,7 +70,8 @@ func TestGolden_Batch_PinkNoise(t *testing.T) {
 	u := requireOrtUpsampler(t)
 	ref := requireFixture(t, "ref_batch_pink.npy")
 
-	input := testutil.PinkNoise(42, 16000)
+	// Load input from fixture so Go and Python use identical bytes (their RNGs differ).
+	input := requireFixture(t, "in_pink.npy")
 
 	out, err := u.Upsample16kTo48k(input)
 	if err != nil {

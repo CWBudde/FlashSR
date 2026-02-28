@@ -141,7 +141,12 @@ func (u *Upsampler) Engine() engine.Engine {
 
 // Close releases the engine session resources.
 func (u *Upsampler) Close() error {
-	return u.eng.Close()
+	err := u.eng.Close()
+	if err != nil {
+		return fmt.Errorf("flashsr: close engine: %w", err)
+	}
+
+	return nil
 }
 
 // clamp returns a copy of x with every sample clamped to [-1, 1].

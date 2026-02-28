@@ -195,7 +195,7 @@ Phase 3:  Public Library & Batch Inference           [3 days]   ✅ Complete
 Phase 4:  WAV I/O + CLI (upsample + doctor)          [4 days]   ✅ Complete
 Phase 5:  Streaming (Buffer, Overlap, Crossfade)     [5 days]   ✅ Complete
 Phase 6:  Resampler (Linear + Polyphase, Multi-Rate) [3 days]   ✅ Complete
-Phase 7:  Golden Tests vs Python Reference           [4 days]   🔄 In Progress (code done; fixtures pending)
+Phase 7:  Golden Tests vs Python Reference           [4 days]   ✅ Complete
 Phase 8:  Benchmarks & Thread Tuning                 [3 days]   🟡 Partial (files written; BENCHMARKS.md pending ORT run)
 Phase 9:  CI + Release Artifacts + Licensing         [4 days]   ✅ Complete
 Phase 10: Pocket-TTS Post-Processor Integration      [5 days]   ✅ Complete
@@ -291,20 +291,21 @@ rates. Full test coverage including 24 kHz and 44.1 kHz end-to-end mock tests.
 
 ### Phase 7: Golden Tests vs Python Reference
 
-**Status:** 🔄 In Progress (all Go code done; Python `.npy` fixtures pending generation).
+**Status:** ✅ Complete.
 
 **Done:** `internal/testutil` helpers (`signals.go`, `compare.go`, `npy.go`). Golden tests
 (`//go:build golden`) in `flashsr/` and `stream/`; skip gracefully without fixtures or ORT.
 Property invariant tests (NoNaN, PeakNormalized, OutputRate) run without any build tag.
-`scripts/gen_fixtures.py` ready; `internal/testutil/fixtures/README.md` documents regeneration.
+`scripts/gen_fixtures.py` generates `.npy` reference files including input signals (`in_pink.npy`
+etc.) to avoid RNG mismatch between Python and Go pink noise generators.
 
-**TODO:** Run `python3 scripts/gen_fixtures.py` with real model to generate `.npy` reference
-files, then verify `go test -tags golden ./...` passes end-to-end.
+All 5 golden tests pass: batch sine/pink/sweep (−Inf dB, bit-perfect), stream sine (−80.84 dB),
+stream pink (−92.62 dB). All well within the −40 dB threshold.
 
 Exit criteria:
 
 - [x] `go test ./...` — all property tests pass.
-- [ ] `go test -tags golden ./...` — all golden tests pass vs Python reference.
+- [x] `go test -tags golden ./...` — all golden tests pass vs Python reference.
 
 ---
 
@@ -392,7 +393,7 @@ Phase 5: Streaming (Overlap/Crossfade)       :done, p5, after p4, 1d
 Phase 6: Resampler (Linear + Polyphase)      :done, p6, after p5, 1d
 
 section v1 Hardening 🔄
-Phase 7: Golden Tests vs Python Reference    :active, p7, after p6, 4d
+Phase 7: Golden Tests vs Python Reference    :done, p7, after p6, 4d
 Phase 8: Benchmarks + Thread Tuning          :p8, after p7, 3d
 Phase 9: CI + Release + Licensing            :p9, after p8, 4d
 
@@ -503,13 +504,14 @@ Every release README must document:
 
 ## Appendix F: Revision History
 
-| Version | Date       | Author | Changes                                                                          |
-| ------- | ---------- | ------ | -------------------------------------------------------------------------------- |
-| 0.1     | 2026-02-27 | Claude | Initial comprehensive plan from goal.md                                          |
-| 0.2     | 2026-02-27 | Claude | Marked completed scaffolding: Phases 0/3/5/9 ✅; Phases 1/2/4/8 🔄              |
-| 0.3     | 2026-02-28 | Claude | Phases 1–5 ✅; Phase 6 🔄 (code done, fixtures pending); Phase 8 🔄              |
-| 0.4     | 2026-02-28 | Claude | Phases 9+10 ✅ — self-contained polyphase FIR (no algo-dsp dep); CLI --input-rate; Phase 7 thread config ✅ |
-| 0.5     | 2026-02-28 | Claude | Renumbered phases; condensed done phases; wrote Phase 8 benchmark files |
+| Version | Date       | Author | Changes                                                                                                           |
+| ------- | ---------- | ------ | ----------------------------------------------------------------------------------------------------------------- |
+| 0.1     | 2026-02-27 | Claude | Initial comprehensive plan from goal.md                                                                           |
+| 0.2     | 2026-02-27 | Claude | Marked completed scaffolding: Phases 0/3/5/9 ✅; Phases 1/2/4/8 🔄                                                |
+| 0.3     | 2026-02-28 | Claude | Phases 1–5 ✅; Phase 6 🔄 (code done, fixtures pending); Phase 8 🔄                                               |
+| 0.4     | 2026-02-28 | Claude | Phases 9+10 ✅ — self-contained polyphase FIR (no algo-dsp dep); CLI --input-rate; Phase 7 thread config ✅       |
+| 0.5     | 2026-02-28 | Claude | Renumbered phases; condensed done phases; wrote Phase 8 benchmark files                                           |
+| 0.6     | 2026-02-28 | Claude | Phase 7 ✅ — all golden tests pass; fixed RNG mismatch by saving Python input signals as fixtures                 |
 | 0.6     | 2026-02-28 | Claude | Phase 9 ✅ (ci.yml split, release.yml, THIRD_PARTY_NOTICES.md, NOTICE); Phase 10 ✅ (pockettts package, 13 tests) |
 
 ---

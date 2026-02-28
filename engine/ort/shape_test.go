@@ -56,6 +56,7 @@ func TestORT_ShapeDetection(t *testing.T) {
 			}
 
 			outN := tc.n * int64(e.upsampleRatio)
+
 			gotOut := []int64(e.outputShape(outN))
 			if !eqSlice(gotOut, tc.wantOut) {
 				t.Errorf("outputShape(%d): got %v, want %v", outN, gotOut, tc.wantOut)
@@ -68,10 +69,12 @@ func eqSlice(a, b []int64) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
 	}
+
 	return true
 }

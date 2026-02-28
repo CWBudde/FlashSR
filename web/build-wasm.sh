@@ -9,15 +9,15 @@ mkdir -p "$DIST_DIR"
 
 GO_WASM_EXEC=""
 for candidate in "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$(go env GOROOT)/misc/wasm/wasm_exec.js"; do
-  if [[ -f $candidate ]]; then
-    GO_WASM_EXEC="$candidate"
-    break
-  fi
+	if [[ -f $candidate ]]; then
+		GO_WASM_EXEC="$candidate"
+		break
+	fi
 done
 
 if [[ -z $GO_WASM_EXEC ]]; then
-  echo "wasm_exec.js not found under GOROOT" >&2
-  exit 1
+	echo "wasm_exec.js not found under GOROOT" >&2
+	exit 1
 fi
 
 GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o "$DIST_DIR/flashsr-kernel.wasm" "$ROOT_DIR/cmd/flashsr-wasm"

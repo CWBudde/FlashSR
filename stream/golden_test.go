@@ -3,6 +3,7 @@
 package stream_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +45,7 @@ func requireStreamFixture(t *testing.T, name string) []float32 {
 	path := filepath.Join(streamFixturesDir, name)
 
 	data, err := testutil.LoadNPYFloat32(path)
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		t.Skipf("fixture %q not found — run scripts/gen_fixtures.py to generate", name)
 	}
 
@@ -69,7 +70,8 @@ func TestGolden_Stream_PinkNoise(t *testing.T) {
 	s := requireStreamer(t)
 	ref := requireStreamFixture(t, "ref_stream_pink.npy")
 
-	input := testutil.PinkNoise(42, 16000)
+	// Load input from fixture so Go and Python use identical bytes (their RNGs differ).
+	input := requireStreamFixture(t, "in_pink.npy")
 	out := feedStreamer(t, s, input, 4000)
 
 	assertStreamGolden(t, out, ref, "stream_pink")

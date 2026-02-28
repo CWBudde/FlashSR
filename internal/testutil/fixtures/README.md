@@ -6,13 +6,13 @@ Go port can be validated against bit-accurate reference outputs.
 
 ## Files
 
-| File | Description |
-|---|---|
-| `ref_batch_sine.npy` | Batch output for 1 s 440 Hz sine at 16 kHz |
-| `ref_batch_pink.npy` | Batch output for 1 s pink noise (seed=42) at 16 kHz |
-| `ref_batch_sweep.npy` | Batch output for 1 s sine sweep 50–4000 Hz at 16 kHz |
+| File                  | Description                                           |
+| --------------------- | ----------------------------------------------------- |
+| `ref_batch_sine.npy`  | Batch output for 1 s 440 Hz sine at 16 kHz            |
+| `ref_batch_pink.npy`  | Batch output for 1 s pink noise (seed=42) at 16 kHz   |
+| `ref_batch_sweep.npy` | Batch output for 1 s sine sweep 50–4000 Hz at 16 kHz  |
 | `ref_stream_sine.npy` | Streaming output (4000-sample chunks) for sine signal |
-| `ref_stream_pink.npy` | Streaming output (4000-sample chunks) for pink noise |
+| `ref_stream_pink.npy` | Streaming output (4000-sample chunks) for pink noise  |
 
 ## Regenerating Fixtures
 

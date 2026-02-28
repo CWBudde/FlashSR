@@ -30,7 +30,11 @@ type PostProcessor interface {
 // to p.Process.
 func ProcessWAVResult(p PostProcessor, r WAVResult) ([]float32, error) {
 	out, _, err := p.Process(r.PCM, r.SampleRate)
-	return out, err
+	if err != nil {
+		return nil, fmt.Errorf("pockettts: post-process WAV result: %w", err)
+	}
+
+	return out, nil
 }
 
 // FlashSRProcessor implements PostProcessor using a FlashSR Upsampler.

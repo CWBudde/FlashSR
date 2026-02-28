@@ -1,7 +1,8 @@
+package resample
+
 // Polyphase FIR resampler — stateful, streaming-friendly.
 //
 // Adapted from github.com/cwbudde/algo-dsp (MIT License).
-package resample
 
 import "math"
 
@@ -222,6 +223,7 @@ type polyphaseResampler struct {
 // newPolyphaseResampler creates a polyphase resampler for the given integer rate pair.
 func newPolyphaseResampler(inRate, outRate int, opts []Option) (Resampler, error) {
 	cfg := defaultConfig()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&cfg)

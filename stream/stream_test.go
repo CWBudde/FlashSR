@@ -83,7 +83,8 @@ func TestStreamer_Reset_Deterministic(t *testing.T) {
 
 	s.Reset()
 
-	if err = s.Write(input); err != nil {
+	err = s.Write(input)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -117,7 +118,8 @@ func TestStreamer_Flush(t *testing.T) {
 		t.Fatalf("expected 0 buffered before flush, got %d", s.Buffered())
 	}
 
-	if err = s.Flush(); err != nil {
+	err = s.Flush()
+	if err != nil {
 		t.Fatal(err)
 	}
 

@@ -26,7 +26,10 @@ in model.go (ExpectedSHA256 constant) for reproducible builds.
 
 Environment variables:
   HF_TOKEN   Hugging Face API token (alternative to --hf-token)`,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			out := cmd.OutOrStdout()
+			errOut := cmd.ErrOrStderr()
+
 			if hfToken == "" {
 				hfToken = os.Getenv("HF_TOKEN")
 			}
@@ -37,25 +40,25 @@ Environment variables:
 				Filename: filename,
 				OutPath:  outPath,
 				HFToken:  hfToken,
-				Stdout:   os.Stdout,
+				Stdout:   out,
 			})
 			if err != nil {
 				var denied *model.AccessDeniedError
 				if errors.As(err, &denied) {
-					_, _ = fmt.Fprintln(os.Stderr, "hint: set HF_TOKEN or pass --hf-token if the repo is gated")
+					_, _ = fmt.Fprintln(errOut, "hint: set HF_TOKEN or pass --hf-token if the repo is gated")
 				}
 
 				return fmt.Errorf("model download: %w", err)
 			}
 
 			if result.Skipped {
-				fmt.Printf("model already up-to-date: %s\n", result.Path)
+				_, _ = fmt.Fprintf(out, "model already up-to-date: %s\n", result.Path)
 			} else {
-				fmt.Printf("model saved:  %s\n", result.Path)
-				fmt.Printf("sha256:       %s\n", result.SHA256)
-				fmt.Println()
-				fmt.Println("To pin this model, set ExpectedSHA256 in model/model.go:")
-				fmt.Printf("  const ExpectedSHA256 = %q\n", result.SHA256)
+				_, _ = fmt.Fprintf(out, "model saved:  %s\n", result.Path)
+				_, _ = fmt.Fprintf(out, "sha256:       %s\n", result.SHA256)
+				_, _ = fmt.Fprintln(out)
+				_, _ = fmt.Fprintln(out, "To pin this model, set ExpectedSHA256 in model/model.go:")
+				_, _ = fmt.Fprintf(out, "  const ExpectedSHA256 = %q\n", result.SHA256)
 			}
 
 			return nil

@@ -5,6 +5,7 @@ package stream
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/MeKo-Christian/flashsr-go/engine"
@@ -46,6 +47,7 @@ func (c Config) overlap() int {
 	return defaultOverlap
 }
 
+//nolint:unused // Reserved for future backpressure / buffer limiting.
 func (c Config) bufferCap() int {
 	if c.BufferCap > 0 {
 		return c.BufferCap
@@ -164,7 +166,7 @@ func (s *Streamer) processChunk(chunk []float32) error {
 	// 3. Inference.
 	raw, err := s.eng.Run(modelInput)
 	if err != nil {
-		return err
+		return fmt.Errorf("stream: engine run: %w", err)
 	}
 
 	// 4. Alignment: skip first outputOverlapSkip output samples.
@@ -201,23 +203,23 @@ func (s *Streamer) processChunk(chunk []float32) error {
 
 // applyCrossfade blends the tail of the previous output with the head of new.
 // Returns the merged output (previous tail replaced by the crossfade region).
-func (s *Streamer) applyCrossfade(new []float32, overlapOut int) []float32 {
+func (s *Streamer) applyCrossfade(next []float32, overlapOut int) []float32 {
 	if len(s.prevTail) == 0 {
-		return new
+		return next
 	}
 
-	if len(new) == 0 {
-		return new
+	if len(next) == 0 {
+		return next
 	}
 
-	n := min(min(overlapOut, len(s.prevTail)), len(new))
+	n := min(min(overlapOut, len(s.prevTail)), len(next))
 
-	out := make([]float32, len(new))
-	copy(out, new)
+	out := make([]float32, len(next))
+	copy(out, next)
 
 	for i := range n {
 		t := float32(i) / float32(n)
-		out[i] = s.prevTail[i]*(1-t) + new[i]*t
+		out[i] = s.prevTail[i]*(1-t) + next[i]*t
 	}
 
 	return out

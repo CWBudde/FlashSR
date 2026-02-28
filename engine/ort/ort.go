@@ -19,7 +19,7 @@ import (
 
 var (
 	initOnce sync.Once
-	initErr  error
+	errInit  error
 
 	// ErrNoORTLib is returned when no shared library path is configured.
 	ErrNoORTLib = errors.New("ort: shared library path is required (set Config.LibraryPath or FLASHSR_ORT_LIB)")
@@ -105,11 +105,11 @@ func New(modelBytes []byte, cfg Config) (*Engine, error) {
 	initOnce.Do(func() {
 		ort.SetSharedLibraryPath(libPath)
 
-		initErr = ort.InitializeEnvironment(ort.WithLogLevelError())
+		errInit = ort.InitializeEnvironment(ort.WithLogLevelError())
 	})
 
-	if initErr != nil {
-		return nil, fmt.Errorf("ort: environment init: %w", initErr)
+	if errInit != nil {
+		return nil, fmt.Errorf("ort: environment init: %w", errInit)
 	}
 
 	// Introspect model to discover tensor names and shapes.
@@ -149,13 +149,16 @@ func New(modelBytes []byte, cfg Config) (*Engine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ort: session options: %w", err)
 	}
-	defer opts.Destroy()
 
-	if err := opts.SetIntraOpNumThreads(intra); err != nil {
+	defer func() { _ = opts.Destroy() }()
+
+	err = opts.SetIntraOpNumThreads(intra)
+	if err != nil {
 		return nil, fmt.Errorf("ort: set intra threads: %w", err)
 	}
 
-	if err := opts.SetInterOpNumThreads(inter); err != nil {
+	err = opts.SetInterOpNumThreads(inter)
+	if err != nil {
 		return nil, fmt.Errorf("ort: set inter threads: %w", err)
 	}
 
@@ -189,7 +192,8 @@ func (e *Engine) Run(input []float32) ([]float32, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ort: create input tensor: %w", err)
 	}
-	defer inputTensor.Destroy()
+
+	defer func() { _ = inputTensor.Destroy() }()
 
 	outN := n * int64(e.upsampleRatio)
 
@@ -197,12 +201,14 @@ func (e *Engine) Run(input []float32) ([]float32, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ort: create output tensor: %w", err)
 	}
-	defer outputTensor.Destroy()
 
-	if err := e.session.Run(
+	defer func() { _ = outputTensor.Destroy() }()
+
+	err = e.session.Run(
 		[]ort.Value{inputTensor},
 		[]ort.Value{outputTensor},
-	); err != nil {
+	)
+	if err != nil {
 		return nil, fmt.Errorf("ort: run: %w", err)
 	}
 
@@ -216,7 +222,12 @@ func (e *Engine) Run(input []float32) ([]float32, error) {
 
 // Close releases the ORT session.
 func (e *Engine) Close() error {
-	return e.session.Destroy()
+	err := e.session.Destroy()
+	if err != nil {
+		return fmt.Errorf("ort: destroy session: %w", err)
+	}
+
+	return nil
 }
 
 // Info returns metadata about the loaded model and runtime.

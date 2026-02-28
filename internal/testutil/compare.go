@@ -18,6 +18,7 @@ func RMSError(a, b []float32) (float64, error) {
 	}
 
 	var sum float64
+
 	for i := range a {
 		d := float64(a[i]) - float64(b[i])
 		sum += d * d

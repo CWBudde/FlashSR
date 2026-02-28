@@ -10,8 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const inputSampleRate = 16000
-const outputSampleRate = 48000
+const (
+	inputSampleRate  = 16000
+	outputSampleRate = 48000
+)
 
 type upsampleFlags struct {
 	input     string
@@ -36,7 +38,7 @@ and writes a 48 kHz WAV output.
 Example:
   flashsr upsample --input speech.wav --output speech_48k.wav \
     --ort-lib /usr/lib/libonnxruntime.so.1.24.1`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return runUpsample(f)
 		},
 	}
@@ -59,8 +61,13 @@ Example:
 // runUpsample is the top-level handler: validates flags, builds an Upsampler,
 // then delegates to runUpsampleWithUpsampler.
 func runUpsample(f upsampleFlags) error {
-	if _, err := os.Stat(f.input); errors.Is(err, os.ErrNotExist) {
+	_, err := os.Stat(f.input)
+	if errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("input file not found: %s", f.input)
+	}
+
+	if err != nil {
+		return fmt.Errorf("stat input: %w", err)
 	}
 
 	// Read WAV header to determine sample rate.
@@ -89,7 +96,8 @@ func runUpsample(f upsampleFlags) error {
 	if err != nil {
 		return fmt.Errorf("init engine: %w", err)
 	}
-	defer u.Close()
+
+	defer func() { _ = u.Close() }()
 
 	return runUpsampleWithUpsampler(u, f)
 }
@@ -114,7 +122,8 @@ func runUpsampleWithUpsampler(u *flashsr.Upsampler, f upsampleFlags) error {
 		return fmt.Errorf("upsample: %w", err)
 	}
 
-	if err := writeWAV(f.output, out, outputSampleRate); err != nil {
+	err = writeWAV(f.output, out, outputSampleRate)
+	if err != nil {
 		return fmt.Errorf("write output WAV: %w", err)
 	}
 
@@ -132,25 +141,24 @@ func upsampleStreaming(u *flashsr.Upsampler, pcm []float32, chunkSize int) ([]fl
 
 	// Feed input in chunkSize pieces.
 	for i := 0; i < len(pcm); i += chunkSize {
-		end := i + chunkSize
-		if end > len(pcm) {
-			end = len(pcm)
-		}
+		end := min(i+chunkSize, len(pcm))
 
-		if err := st.Write(pcm[i:end]); err != nil {
+		err := st.Write(pcm[i:end])
+		if err != nil {
 			return nil, fmt.Errorf("stream write: %w", err)
 		}
 	}
 
 	// Flush any remaining partial chunk.
-	if err := st.Flush(); err != nil {
+	err := st.Flush()
+	if err != nil {
 		return nil, fmt.Errorf("stream flush: %w", err)
 	}
 
 	// Drain output buffer.
 	out := make([]float32, st.Buffered())
-	n, err := st.Read(out)
 
+	n, err := st.Read(out)
 	if err != nil {
 		return nil, fmt.Errorf("stream read: %w", err)
 	}

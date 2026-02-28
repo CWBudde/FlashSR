@@ -12,11 +12,13 @@ func TestProperty_Stream_NoNaN(t *testing.T) {
 	for _, sig := range streamPropertySignals(t) {
 		s := stream.New(&scaleEngine{}, stream.Config{ChunkSize: 4000})
 
-		if err := s.Write(sig.pcm); err != nil {
+		err := s.Write(sig.pcm)
+		if err != nil {
 			t.Fatalf("%s: Write: %v", sig.name, err)
 		}
 
-		if err := s.Flush(); err != nil {
+		err = s.Flush()
+		if err != nil {
 			t.Fatalf("%s: Flush: %v", sig.name, err)
 		}
 
@@ -39,19 +41,22 @@ func TestProperty_Stream_OutputRate(t *testing.T) {
 	for _, sig := range streamPropertySignals(t) {
 		s := stream.New(&scaleEngine{}, stream.Config{ChunkSize: chunkSize})
 
-		if err := s.Write(sig.pcm); err != nil {
+		err := s.Write(sig.pcm)
+		if err != nil {
 			t.Fatalf("%s: Write: %v", sig.name, err)
 		}
 
-		if err := s.Flush(); err != nil {
+		err = s.Flush()
+		if err != nil {
 			t.Fatalf("%s: Flush: %v", sig.name, err)
 		}
 
 		out := make([]float32, s.Buffered())
 		n, _ := s.Read(out)
 
-		lo := len(sig.pcm)           // at least 1× (trims happen at start)
-		hi := len(sig.pcm)*3 + 6000  // at most 3× + small buffer for overlap/flush
+		lo := len(sig.pcm) // at least 1× (trims happen at start)
+
+		hi := len(sig.pcm)*3 + 6000 // at most 3× + small buffer for overlap/flush
 		if n < lo || n > hi {
 			t.Errorf("%s: output length %d outside [%d, %d]", sig.name, n, lo, hi)
 		}

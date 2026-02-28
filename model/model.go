@@ -13,7 +13,7 @@ import (
 )
 
 // ExpectedSHA256 is the SHA256 hex digest of the pinned model artefact.
-// Source: YatharthS/FlashSR @ onnx/model.onnx
+// Source: YatharthS/FlashSR @ onnx/model.onnx.
 const ExpectedSHA256 = "e255c76b227f16f7f392cc43677c38bd2c5aa129f042a2ba3eb03fb29e470c7a"
 
 // embeddedModel is the FlashSR ONNX model compiled into the binary via assets.

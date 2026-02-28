@@ -23,7 +23,8 @@ func TestWAVRoundtrip(t *testing.T) {
 
 	tmp := t.TempDir() + "/roundtrip.wav"
 
-	if err := writeWAV(tmp, input, sr); err != nil {
+	err := writeWAV(tmp, input, sr)
+	if err != nil {
 		t.Fatalf("writeWAV: %v", err)
 	}
 
@@ -59,7 +60,8 @@ func TestUpsample_44kInputViaMock(t *testing.T) {
 	inPath := dir + "/in44k.wav"
 	outPath := dir + "/out.wav"
 
-	if err := writeWAV(inPath, makeSineWAV(440, sr, sr/10), sr); err != nil {
+	err := writeWAV(inPath, makeSineWAV(440, sr, sr/10), sr)
+	if err != nil {
 		t.Fatalf("write 44.1kHz WAV: %v", err)
 	}
 
@@ -67,10 +69,11 @@ func TestUpsample_44kInputViaMock(t *testing.T) {
 
 	// runUpsampleWithUpsampler reads the WAV and runs inference regardless of
 	// the WAV's sample rate; the mock 3×-scales whatever it receives.
-	if err := runUpsampleWithUpsampler(u, upsampleFlags{
+	err = runUpsampleWithUpsampler(u, upsampleFlags{
 		input:  inPath,
 		output: outPath,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("runUpsampleWithUpsampler (44.1kHz): %v", err)
 	}
 
@@ -96,16 +99,18 @@ func TestUpsample_MockEngine(t *testing.T) {
 	inPath := dir + "/in.wav"
 	outPath := dir + "/out.wav"
 
-	if err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr); err != nil {
+	err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr)
+	if err != nil {
 		t.Fatalf("write input WAV: %v", err)
 	}
 
 	u := flashsr.NewWithEngine(&mockScaleEngine{})
 
-	if err := runUpsampleWithUpsampler(u, upsampleFlags{
+	err = runUpsampleWithUpsampler(u, upsampleFlags{
 		input:  inPath,
 		output: outPath,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("runUpsampleWithUpsampler: %v", err)
 	}
 
@@ -136,16 +141,18 @@ func TestUpsample_24kInput(t *testing.T) {
 	inPath := dir + "/in24k.wav"
 	outPath := dir + "/out48k.wav"
 
-	if err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr); err != nil {
+	err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr)
+	if err != nil {
 		t.Fatalf("write 24kHz WAV: %v", err)
 	}
 
 	u := flashsr.NewWithEngine(&mockScaleEngine{})
 
-	if err := runUpsampleWithUpsampler(u, upsampleFlags{
+	err = runUpsampleWithUpsampler(u, upsampleFlags{
 		input:  inPath,
 		output: outPath,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("runUpsampleWithUpsampler (24kHz): %v", err)
 	}
 
@@ -177,15 +184,17 @@ func TestCLI_Upsample_Basic(t *testing.T) {
 	inPath := dir + "/in.wav"
 	outPath := dir + "/out.wav"
 
-	if err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr); err != nil {
+	err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr)
+	if err != nil {
 		t.Fatalf("write input WAV: %v", err)
 	}
 
-	if err := runUpsample(upsampleFlags{
+	err = runUpsample(upsampleFlags{
 		input:  inPath,
 		output: outPath,
 		ortLib: ortLib,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("runUpsample: %v", err)
 	}
 
@@ -200,6 +209,7 @@ func TestCLI_Upsample_Basic(t *testing.T) {
 
 	// Output should be approximately 3× the input length.
 	wantMin := n * 2
+
 	wantMax := n * 4
 	if len(samples) < wantMin || len(samples) > wantMax {
 		t.Errorf("output length %d outside expected range [%d, %d]", len(samples), wantMin, wantMax)
@@ -224,17 +234,19 @@ func TestUpsample_Streaming(t *testing.T) {
 	inPath := dir + "/in.wav"
 	outPath := dir + "/out.wav"
 
-	if err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr); err != nil {
+	err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr)
+	if err != nil {
 		t.Fatalf("write input WAV: %v", err)
 	}
 
-	if err := runUpsample(upsampleFlags{
+	err = runUpsample(upsampleFlags{
 		input:     inPath,
 		output:    outPath,
 		ortLib:    ortLib,
 		streaming: true,
 		chunkSize: 4000,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("runUpsample (streaming): %v", err)
 	}
 
@@ -267,7 +279,7 @@ func (e *mockScaleEngine) Info() engine.EngineInfo { return engine.EngineInfo{Pr
 
 // --- helpers ---
 
-func makeSineWAV(freq, sampleRate, n int) []float32 {
+func makeSineWAV(freq, sampleRate, n int) []float32 { //nolint:unparam // Keep freq parameter for readability in tests.
 	out := make([]float32, n)
 	for i := range out {
 		out[i] = float32(math.Sin(2 * math.Pi * float64(freq) * float64(i) / float64(sampleRate)))

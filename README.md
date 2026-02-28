@@ -1,5 +1,9 @@
 # FlashSR Go
 
+> **Upstream / Original Project:** [ysharma3501/FlashSR](https://github.com/ysharma3501/FlashSR)
+>
+> This Go implementation is based on and inspired by the original FlashSR project.
+
 `flashsr-go` is a Go library and CLI for FlashSR audio super-resolution.
 It runs the FlashSR ONNX model to convert speech-like audio to 48 kHz output.
 

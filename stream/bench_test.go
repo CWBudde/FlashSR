@@ -54,17 +54,16 @@ func runStreamBench(b *testing.B, chunkSize int) {
 		st := stream.New(u.Engine(), stream.Config{ChunkSize: chunkSize})
 
 		for i := 0; i < len(input); i += chunkSize {
-			end := i + chunkSize
-			if end > len(input) {
-				end = len(input)
-			}
+			end := min(i+chunkSize, len(input))
 
-			if err := st.Write(input[i:end]); err != nil {
+			err := st.Write(input[i:end])
+			if err != nil {
 				b.Fatalf("Write: %v", err)
 			}
 		}
 
-		if err := st.Flush(); err != nil {
+		err := st.Flush()
+		if err != nil {
 			b.Fatalf("Flush: %v", err)
 		}
 
@@ -74,6 +73,7 @@ func runStreamBench(b *testing.B, chunkSize int) {
 		}
 
 		_ = outBuf[:n]
+
 		st.Reset()
 	}
 

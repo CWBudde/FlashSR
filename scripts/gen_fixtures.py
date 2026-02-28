@@ -143,6 +143,12 @@ def main():
         "sweep": sine_sweep(50, 4000, SAMPLE_RATE),
     }
 
+    # Save input signals so Go tests can load identical bytes (avoids RNG mismatch).
+    for name, pcm in signals.items():
+        path = os.path.join(args.out, f"in_{name}.npy")
+        np.save(path, pcm)
+        print(f"  saved input {path}  shape={pcm.shape}")
+
     for name, pcm in signals.items():
         print(f"Running batch inference on {name} ({len(pcm)} samples)...")
         out = model.run(pcm)

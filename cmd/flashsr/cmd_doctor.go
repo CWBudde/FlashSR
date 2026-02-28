@@ -24,8 +24,8 @@ configured and prints version/diagnostic information.
 
 Example:
   flashsr doctor --ort-lib /usr/lib/libonnxruntime.so.1.24.1`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDoctor(f)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runDoctor(cmd, f)
 		},
 	}
 
@@ -35,47 +35,50 @@ Example:
 	return cmd
 }
 
-func runDoctor(f doctorFlags) error {
-	fmt.Println("=== FlashSR Doctor ===")
+func runDoctor(cmd *cobra.Command, f doctorFlags) error {
+	out := cmd.OutOrStdout()
+
+	_, _ = fmt.Fprintln(out, "=== FlashSR Doctor ===")
 
 	// --- Model check ---
-	fmt.Println("\n[Model]")
+	_, _ = fmt.Fprintln(out, "\n[Model]")
 
 	modelBytes, err := model.Load(model.Config{Path: f.modelPath})
 	if err != nil {
-		fmt.Printf("  ✗ model load failed: %v\n", err)
+		_, _ = fmt.Fprintf(out, "  ✗ model load failed: %v\n", err)
 	} else {
-		fmt.Printf("  ✓ model loaded (%d bytes)\n", len(modelBytes))
+		_, _ = fmt.Fprintf(out, "  ✓ model loaded (%d bytes)\n", len(modelBytes))
 
 		if model.ExpectedSHA256 != "" {
-			fmt.Printf("  ✓ pinned SHA256: %s\n", model.ExpectedSHA256)
+			_, _ = fmt.Fprintf(out, "  ✓ pinned SHA256: %s\n", model.ExpectedSHA256)
 		} else {
-			fmt.Println("  ⚠ SHA256 not yet pinned (Phase 2 TODO)")
+			_, _ = fmt.Fprintln(out, "  ⚠ SHA256 not yet pinned (Phase 2 TODO)")
 		}
 	}
 
 	// --- ORT / Engine check ---
-	fmt.Println("\n[ORT Engine]")
+	_, _ = fmt.Fprintln(out, "\n[ORT Engine]")
 
 	u, err := flashsr.New(flashsr.Config{
 		ModelPath:  f.modelPath,
 		ORTLibPath: f.ortLib,
 	})
 	if err != nil {
-		fmt.Printf("  ✗ engine init failed: %v\n", err)
-		fmt.Println("\nDoctor finished with errors.")
+		_, _ = fmt.Fprintf(out, "  ✗ engine init failed: %v\n", err)
+		_, _ = fmt.Fprintln(out, "\nDoctor finished with errors.")
 
 		return nil // non-fatal; show all results
 	}
-	defer u.Close()
+
+	defer func() { _ = u.Close() }()
 
 	info := u.EngineInfo()
-	fmt.Printf("  ✓ ORT version:  %s\n", info.OrtVersion)
-	fmt.Printf("  ✓ provider:     %s\n", info.Provider)
-	fmt.Printf("  ✓ input tensor: %s (rank %d)\n", info.InputName, info.InputRank)
-	fmt.Printf("  ✓ output tensor: %s\n", info.OutputName)
+	_, _ = fmt.Fprintf(out, "  ✓ ORT version:  %s\n", info.OrtVersion)
+	_, _ = fmt.Fprintf(out, "  ✓ provider:     %s\n", info.Provider)
+	_, _ = fmt.Fprintf(out, "  ✓ input tensor: %s (rank %d)\n", info.InputName, info.InputRank)
+	_, _ = fmt.Fprintf(out, "  ✓ output tensor: %s\n", info.OutputName)
 
-	fmt.Println("\nDoctor finished — all checks passed.")
+	_, _ = fmt.Fprintln(out, "\nDoctor finished — all checks passed.")
 
 	return nil
 }

@@ -29,6 +29,7 @@ func mockUpsampler() *flashsr.Upsampler {
 	return flashsr.NewWithEngine(&mockEngine{})
 }
 
+//nolint:unparam // Keep freq parameter for readability in tests.
 func makeSine(freq, sampleRate, n int) []float32 {
 	out := make([]float32, n)
 	for i := range out {
@@ -240,6 +241,7 @@ func TestInt16ToFloat32_MaxMin(t *testing.T) {
 func TestInt16ToFloat32_Roundtrip(t *testing.T) {
 	// Encode sine as int16, decode, check magnitude is within ±2 LSB.
 	const n = 1600
+
 	in := make([]int16, n)
 	for i := range in {
 		in[i] = int16(math.Sin(2*math.Pi*440*float64(i)/16000) * 32767)
@@ -251,6 +253,7 @@ func TestInt16ToFloat32_Roundtrip(t *testing.T) {
 	}
 
 	const epsilon = 2.0 / 32768.0 // 2 LSB
+
 	for i, v := range out {
 		want := float32(in[i]) / 32768.0
 		if diff := float32(math.Abs(float64(v - want))); diff > epsilon {

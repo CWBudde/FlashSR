@@ -18,55 +18,17 @@ func LoadNPYFloat32(path string) ([]float32, error) {
 	if err != nil {
 		return nil, fmt.Errorf("npy: open %q: %w", path, err)
 	}
+
 	defer func() { _ = f.Close() }()
 
 	return readNPYFloat32(f)
 }
 
 func readNPYFloat32(r io.Reader) ([]float32, error) {
-	// Magic: \x93NUMPY
-	magic := make([]byte, 6)
-	if _, err := io.ReadFull(r, magic); err != nil {
-		return nil, fmt.Errorf("npy: read magic: %w", err)
+	hdrStr, err := readNPYHeader(r)
+	if err != nil {
+		return nil, err
 	}
-
-	if string(magic) != "\x93NUMPY" {
-		return nil, errors.New("npy: not a numpy file")
-	}
-
-	// Version: major, minor (1 byte each).
-	var ver [2]byte
-	if _, err := io.ReadFull(r, ver[:]); err != nil {
-		return nil, fmt.Errorf("npy: read version: %w", err)
-	}
-
-	// Header length: 2 bytes (v1) or 4 bytes (v2), little-endian.
-	var headerLen uint32
-	switch ver[0] {
-	case 1:
-		var hl [2]byte
-		if _, err := io.ReadFull(r, hl[:]); err != nil {
-			return nil, fmt.Errorf("npy: read header len: %w", err)
-		}
-
-		headerLen = uint32(binary.LittleEndian.Uint16(hl[:]))
-	case 2:
-		var hl [4]byte
-		if _, err := io.ReadFull(r, hl[:]); err != nil {
-			return nil, fmt.Errorf("npy: read header len v2: %w", err)
-		}
-
-		headerLen = binary.LittleEndian.Uint32(hl[:])
-	default:
-		return nil, fmt.Errorf("npy: unsupported version %d.%d", ver[0], ver[1])
-	}
-
-	hdr := make([]byte, headerLen)
-	if _, err := io.ReadFull(r, hdr); err != nil {
-		return nil, fmt.Errorf("npy: read header: %w", err)
-	}
-
-	hdrStr := strings.TrimSpace(string(hdr))
 
 	dtype, err := extractString(hdrStr, "descr")
 	if err != nil {
@@ -83,11 +45,75 @@ func readNPYFloat32(r io.Reader) ([]float32, error) {
 	}
 
 	data := make([]float32, n)
-	if err := binary.Read(r, binary.LittleEndian, data); err != nil {
+
+	err = binary.Read(r, binary.LittleEndian, data)
+	if err != nil {
 		return nil, fmt.Errorf("npy: read data: %w", err)
 	}
 
 	return data, nil
+}
+
+func readNPYHeader(r io.Reader) (string, error) {
+	// Magic: \x93NUMPY
+	magic := make([]byte, 6)
+
+	_, err := io.ReadFull(r, magic)
+	if err != nil {
+		return "", fmt.Errorf("npy: read magic: %w", err)
+	}
+
+	if string(magic) != "\x93NUMPY" {
+		return "", errors.New("npy: not a numpy file")
+	}
+
+	// Version: major, minor (1 byte each).
+	var ver [2]byte
+
+	_, err = io.ReadFull(r, ver[:])
+	if err != nil {
+		return "", fmt.Errorf("npy: read version: %w", err)
+	}
+
+	headerLen, err := readNPYHeaderLen(r, ver)
+	if err != nil {
+		return "", err
+	}
+
+	hdr := make([]byte, headerLen)
+
+	_, err = io.ReadFull(r, hdr)
+	if err != nil {
+		return "", fmt.Errorf("npy: read header: %w", err)
+	}
+
+	return strings.TrimSpace(string(hdr)), nil
+}
+
+func readNPYHeaderLen(r io.Reader, ver [2]byte) (uint32, error) {
+	// Header length: 2 bytes (v1) or 4 bytes (v2), little-endian.
+	switch ver[0] {
+	case 1:
+		var hl [2]byte
+
+		_, err := io.ReadFull(r, hl[:])
+		if err != nil {
+			return 0, fmt.Errorf("npy: read header len: %w", err)
+		}
+
+		return uint32(binary.LittleEndian.Uint16(hl[:])), nil
+	case 2:
+		var hl [4]byte
+
+		_, err := io.ReadFull(r, hl[:])
+		if err != nil {
+			return 0, fmt.Errorf("npy: read header len v2: %w", err)
+		}
+
+		return binary.LittleEndian.Uint32(hl[:]), nil
+	default:
+		return 0, fmt.Errorf("npy: unsupported version %d.%d", ver[0], ver[1]) //nolint:gosec // ver is a fixed [2]byte; indices are always in range
+	}
 }
 
 // extractString parses a Python dict literal for a string value by key.

@@ -26,11 +26,13 @@ func TestNewFor_SameRate(t *testing.T) {
 }
 
 func TestNewFor_InvalidRate(t *testing.T) {
-	if _, err := resample.NewFor(0, 48000); err == nil {
+	_, err := resample.NewFor(0, 48000)
+	if err == nil {
 		t.Fatal("expected error for inRate=0")
 	}
 
-	if _, err := resample.NewFor(48000, 0); err == nil {
+	_, err = resample.NewFor(48000, 0)
+	if err == nil {
 		t.Fatal("expected error for outRate=0")
 	}
 }
@@ -243,6 +245,7 @@ func TestPolyphase_NoNaN(t *testing.T) {
 
 // --- helpers ---
 
+//nolint:unparam // Keep freq parameter for readability in tests.
 func makeSine(freq, sampleRate, numSamples int) []float32 {
 	out := make([]float32, numSamples)
 	for i := range out {
