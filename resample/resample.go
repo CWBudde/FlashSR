@@ -23,8 +23,9 @@ type Resampler interface {
 	Reset()
 }
 
-// NewFor returns a Resampler for the given rate pair.
+// NewFor returns a linear interpolating Resampler for the given rate pair.
 // When inRate == outRate it returns a pass-through resampler.
+// For higher quality, use NewPolyphase.
 func NewFor(inRate, outRate int) (Resampler, error) {
 	if inRate <= 0 || outRate <= 0 {
 		return nil, fmt.Errorf("%w: in=%d out=%d", ErrInvalidRate, inRate, outRate)
@@ -34,7 +35,22 @@ func NewFor(inRate, outRate int) (Resampler, error) {
 		return &passthrough{}, nil
 	}
 
-	return newResampler(inRate, outRate)
+	return newLinearResampler(inRate, outRate)
+}
+
+// NewPolyphase returns a polyphase FIR Resampler for the given rate pair.
+// It offers configurable anti-aliasing quality via Option functions.
+// When inRate == outRate it returns a pass-through resampler.
+func NewPolyphase(inRate, outRate int, opts ...Option) (Resampler, error) {
+	if inRate <= 0 || outRate <= 0 {
+		return nil, fmt.Errorf("%w: in=%d out=%d", ErrInvalidRate, inRate, outRate)
+	}
+
+	if inRate == outRate {
+		return &passthrough{}, nil
+	}
+
+	return newPolyphaseResampler(inRate, outRate, opts)
 }
 
 // passthrough is a no-op resampler for inRate == outRate.

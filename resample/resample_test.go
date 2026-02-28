@@ -124,6 +124,123 @@ func TestLinear_StreamingNoBoundaryJumps(t *testing.T) {
 	}
 }
 
+// --- polyphase tests ---
+
+func TestPolyphase_24kTo16k_Length(t *testing.T) {
+	r, err := resample.NewPolyphase(24000, 16000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in := makeSine(440, 24000, 24000) // 1s @ 24kHz
+
+	out, err := r.Process(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if abs(len(out)-16000) > 5 {
+		t.Fatalf("24k→16k polyphase: got %d samples, want ≈16000", len(out))
+	}
+}
+
+func TestPolyphase_16kTo48k_Length(t *testing.T) {
+	r, err := resample.NewPolyphase(16000, 48000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in := makeSine(440, 16000, 16000)
+
+	out, err := r.Process(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if abs(len(out)-48000) > 5 {
+		t.Fatalf("16k→48k polyphase: got %d samples, want ≈48000", len(out))
+	}
+}
+
+func TestPolyphase_QualityModes(t *testing.T) {
+	rates := [][2]int{{24000, 16000}, {44100, 16000}, {8000, 16000}}
+	qualities := []resample.Quality{resample.QualityFast, resample.QualityBalanced, resample.QualityBest}
+
+	for _, rr := range rates {
+		for _, q := range qualities {
+			r, err := resample.NewPolyphase(rr[0], rr[1], resample.WithQuality(q))
+			if err != nil {
+				t.Fatalf("%d→%d quality=%d: %v", rr[0], rr[1], q, err)
+			}
+
+			in := makeSine(440, rr[0], rr[0])
+
+			out, err := r.Process(in)
+			if err != nil {
+				t.Fatalf("%d→%d quality=%d: Process: %v", rr[0], rr[1], q, err)
+			}
+
+			if len(out) == 0 {
+				t.Errorf("%d→%d quality=%d: empty output", rr[0], rr[1], q)
+			}
+		}
+	}
+}
+
+func TestPolyphase_Reset(t *testing.T) {
+	r, err := resample.NewPolyphase(24000, 16000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in := makeSine(440, 24000, 4800)
+	out1, _ := r.Process(in)
+	r.Reset()
+	out2, _ := r.Process(in)
+
+	if len(out1) != len(out2) {
+		t.Fatalf("after Reset, lengths differ: %d vs %d", len(out1), len(out2))
+	}
+
+	for i := range out1 {
+		if out1[i] != out2[i] {
+			t.Fatalf("after Reset, sample[%d] differs: %.6f vs %.6f", i, out1[i], out2[i])
+		}
+	}
+}
+
+func TestPolyphase_SameRate_Passthrough(t *testing.T) {
+	r, err := resample.NewPolyphase(16000, 16000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in := makeSine(440, 16000, 1600)
+
+	out, err := r.Process(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(out) != len(in) {
+		t.Fatalf("passthrough: got %d, want %d", len(out), len(in))
+	}
+}
+
+func TestPolyphase_NoNaN(t *testing.T) {
+	for _, q := range []resample.Quality{resample.QualityFast, resample.QualityBalanced, resample.QualityBest} {
+		r, _ := resample.NewPolyphase(44100, 16000, resample.WithQuality(q))
+		in := makeSine(440, 44100, 44100)
+		out, _ := r.Process(in)
+
+		for i, v := range out {
+			if v != v { // NaN check
+				t.Fatalf("quality=%d: NaN at index %d", q, i)
+			}
+		}
+	}
+}
+
 // --- helpers ---
 
 func makeSine(freq, sampleRate, numSamples int) []float32 {

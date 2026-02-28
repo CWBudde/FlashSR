@@ -21,6 +21,7 @@ type upsampleFlags struct {
 	threads   int
 	streaming bool
 	chunkSize int
+	inputRate int // 0 = auto-detect from WAV header
 }
 
 func newUpsampleCmd() *cobra.Command {
@@ -47,6 +48,7 @@ Example:
 	cmd.Flags().IntVar(&f.threads, "threads", 1, "ORT intra/inter thread count")
 	cmd.Flags().BoolVar(&f.streaming, "stream", false, "use streaming (chunk-based) mode")
 	cmd.Flags().IntVar(&f.chunkSize, "chunk-size", 4000, "chunk size in samples (streaming mode)")
+	cmd.Flags().IntVar(&f.inputRate, "input-rate", 0, "input sample rate override (0 = read from WAV header)")
 
 	_ = cmd.MarkFlagRequired("input")
 	_ = cmd.MarkFlagRequired("output")
@@ -61,15 +63,20 @@ func runUpsample(f upsampleFlags) error {
 		return fmt.Errorf("input file not found: %s", f.input)
 	}
 
-	// Reject non-16kHz input early (before loading the model) so the error
-	// message is clear even without an ORT library present.
+	// Read WAV header to determine sample rate.
 	_, sr, err := readWAV(f.input)
 	if err != nil {
 		return fmt.Errorf("read input: %w", err)
 	}
 
-	if sr != inputSampleRate {
-		return fmt.Errorf("input sample rate is %d Hz; FlashSR requires %d Hz", sr, inputSampleRate)
+	// --input-rate overrides the WAV header.
+	if f.inputRate != 0 {
+		sr = f.inputRate
+	}
+
+	// Reject rates that are neither 16kHz nor supported for resampling.
+	if sr != inputSampleRate && sr <= 0 {
+		return fmt.Errorf("invalid input sample rate %d Hz", sr)
 	}
 
 	u, err := flashsr.New(flashsr.Config{
@@ -77,6 +84,7 @@ func runUpsample(f upsampleFlags) error {
 		ORTLibPath:      f.ortLib,
 		NumThreadsIntra: f.threads,
 		NumThreadsInter: f.threads,
+		InputRate:       sr,
 	})
 	if err != nil {
 		return fmt.Errorf("init engine: %w", err)

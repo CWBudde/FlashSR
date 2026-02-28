@@ -434,6 +434,57 @@ section v1.1/v2 Enhancements
 Internal Linear Resampler (multi-rate)    :b1, after a8, 5d
 algo-dsp Resampler via build tag          :b2, after b1, 5d
 Pocket-TTS Integration (Post-Processor)   :b3, after b2, 7d
+
+section v2+ Distribution & Backends
+ORT Library Bootstrap (Download/Cache)    :c1, after b3, 7d
+Optional Purego Engine Evaluation         :c2, after c1, 7d
+Windows Build + Release Bundle            :c3, after c2, 7d
+
+section v2+ Quality & Performance
+Golden Tests in CI (gated)                :d1, after c3, 5d
+Profiling + Allocation/Throughput Tuning  :d2, after d1, 7d
+
+section v2+ API & Docs
+API Stabilization + Examples              :e1, after d2, 5d
 ```
+
+## Zusätzliche Phasen (Future Work)
+
+Diese Phasen sind bewusst „v2+“ gehalten: sie bauen auf dem v1/v1.1‑Core auf und adressieren vor allem Distribution, Plattformbreite und langfristige Wartbarkeit.
+
+Phase 12 — End-to-End Multi‑Rate
+
+- Library: `InputRate`/Resampler‑Stage sauber in die Public API integrieren.
+- CLI: `--input-rate` + Tests/Fixtures, damit Pocket‑TTS (24 kHz) ohne Workarounds funktioniert.
+
+Phase 13 — Release Engineering fertigstellen
+
+- `THIRD_PARTY_NOTICES.md` + klare Attributionen inkl. Modell‑Hash.
+- GoReleaser Snapshot + reproduzierbare Artefakte pro Plattform.
+
+Phase 14 — Distribution der ORT Shared Library
+
+- Strategie festlegen: „bring your own ORT“ vs Bundle vs Auto‑Download + Cache.
+- `flashsr doctor` als verbindlicher Preflight (Library‑Pfad/Version/Provider‑Info).
+
+Phase 15 — Alternative Engine Backends (optional)
+
+- Evaluation von purego‑Bindings (weniger cgo‑Pain, ggf. bessere Packaging‑Story).
+- Klare Compatibility‑Matrix (ORT Version ↔ Binding ↔ Plattform).
+
+Phase 16 — Plattformbreite
+
+- Windows‑Builds (Toolchain, DLL‑Handling) und Linux ARM64.
+- Dokumentierte Install‑Pfadkonventionen für ORT.
+
+Phase 17 — Qualitätssicherung „Production Grade“
+
+- Golden‑Tests regelmäßig (CI‑gated) + toleranzbasierte Audio‑Metriken.
+- Fuzz/Property‑Tests für WAV‑Parsing, Chunking/Streaming‑Grenzfälle.
+
+Phase 18 — Performance/Ergonomie
+
+- Profiling, Allokationsreduktion, Thread‑Tuning Defaults und Bench‑Reporting.
+- Optionale GPU‑Provider‑Story (nur wenn tatsächlich testbar/packagbar).
 
 Die ORT‑Release‑Frequenz und Versionen ändern sich; aktuell zeigt das ORT‑Repo Releases bis v1.24.2 (Feb 19, 2026). Das spricht für ein **Version‑Pinning** im Projekt (z. B. ORT 1.24.1 passend zu `yalue` Headern) und einen kontrollierten Upgrade‑Prozess. citeturn22view0turn24view0

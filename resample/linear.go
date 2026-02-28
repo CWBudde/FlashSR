@@ -1,5 +1,3 @@
-//go:build !algodsp
-
 package resample
 
 import "math"
@@ -12,7 +10,7 @@ type linearResampler struct {
 	prev  float32 // last sample of previous chunk (for inter-chunk interpolation)
 }
 
-func newResampler(inRate, outRate int) (Resampler, error) {
+func newLinearResampler(inRate, outRate int) (Resampler, error) {
 	return &linearResampler{
 		ratio: float64(inRate) / float64(outRate),
 	}, nil

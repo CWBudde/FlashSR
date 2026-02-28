@@ -189,12 +189,12 @@ Phase 0:  Bootstrap & Governance                     [3 days]   ✅ Complete
 Phase 1:  Engine Interface & ORT Binding             [5 days]   ✅ Complete
 Phase 2:  Model Handling (embed + path override)     [2 days]   ✅ Complete
 Phase 3:  Public Library & Batch Inference           [3 days]   ✅ Complete
-Phase 4:  WAV I/O + CLI (upsample + doctor)          [4 days]   🔄 In Progress (Cobra scaffold done; WAV I/O pending)
+Phase 4:  WAV I/O + CLI (upsample + doctor)          [4 days]   ✅ Complete
 Phase 5:  Streaming (Buffer, Overlap, Crossfade)     [5 days]   ✅ Complete
-Phase 6:  Golden Tests vs Python Reference           [4 days]   📋 Planned
+Phase 6:  Golden Tests vs Python Reference           [4 days]   🔄 In Progress (all code done; Python fixtures pending)
 Phase 7:  Benchmarks & Thread Tuning                 [3 days]   📋 Planned
 Phase 8:  CI + Release Artifacts + Licensing         [4 days]   🔄 In Progress (CI workflow done; goreleaser + THIRD_PARTY_NOTICES pending)
-Phase 9:  Linear Resampler (multi-rate v1.1)         [3 days]   ✅ Complete
+Phase 9:  Linear Resampler (multi-rate v1.1)         [3 days]   🟡 Partial (resampler implemented; library/CLI wiring pending)
 Phase 10: algo-dsp Resampler (build tag)             [3 days]   📋 Planned
 Phase 11: Pocket-TTS Post-Processor Integration      [5 days]   📋 Planned
 ```
@@ -205,392 +205,73 @@ Phase 11: Pocket-TTS Post-Processor Integration      [5 days]   📋 Planned
 
 ### Phase 0: Bootstrap & Governance
 
-**Goal:** Working repo with module, justfile, lint, CI skeleton, and NOTICE.
+**Status:** ✅ Complete.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `go.mod`
-- Create: `justfile`
-- Create: `.golangci.yml`
-- Create: `.github/workflows/ci.yml`
-- Create: `NOTICE`
-- Create: `LICENSE` (choose Apache-2.0 for FlashSR parity)
-
-**Tasks:**
-
-- [x] Initialize Go module
-  - [x] Run `go mod init github.com/MeKo-Christian/flashsr-go`
-  - [x] Set `go 1.23` minimum (matches `yalue/onnxruntime_go` header version)
-  - [ ] Commit: `chore: initialize go module`
-
-- [x] Create `justfile` with targets: `test`, `lint`, `fmt`, `bench`, `ci`, `build`
-
-  ```makefile
-  test:
-      go test ./...
-
-  lint:
-      golangci-lint run ./...
-
-  fmt:
-      gofmt -w .
-
-  bench:
-      go test -bench=. -benchmem ./...
-
-  ci: fmt lint test
-
-  build:
-      go build ./cmd/flashsr
-  ```
-
-  - [ ] Commit: `chore: add justfile`
-
-- [x] Configure `.golangci.yml`
-  - [x] Enable: `errcheck`, `govet`, `staticcheck`, `unused`, `gofmt`, `goimports`
-  - [x] Set `run.timeout = 5m`
-  - [ ] Commit: `chore: add golangci-lint config`
-
-- [x] Write `NOTICE` file
-  - [x] Attribute FlashSR (Apache-2.0, Hugging Face), ORT (MIT), algo-dsp (MIT, optional)
-  - [ ] Commit: `chore: add NOTICE and LICENSE`
-
-- [x] Add GitHub Actions CI
-  - [x] Matrix: `ubuntu-latest` (Go 1.23 + 1.24)
-  - [x] Steps: checkout → setup-go → `go test ./...` → `golangci-lint`
-  - [ ] Commit: `ci: add GitHub Actions CI workflow`
-
-Exit criteria:
-
-- [x] `just ci` passes on a clean checkout with no source files yet.
-- [x] LICENSE, NOTICE present and correct.
+- Bootstrapped module + repo governance: `go.mod`, `LICENSE`, `NOTICE`.
+- Added local dev tooling: `justfile`, `.golangci.yml`, formatting/lint/test targets.
+- Added CI workflow that runs tests and lint in a Go version matrix.
 
 ---
 
 ### Phase 1: Engine Interface & ORT Binding
 
-**Goal:** A working `Engine` interface and an ORT-backed implementation that can run a real
-ONNX model tensor through `Run()`.
+**Status:** ✅ Complete.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `engine/engine.go`
-- Create: `engine/ort/ort.go`
-- Create: `engine/ort/ort_test.go`
-
-**Background:** `yalue/onnxruntime_go` loads `libonnxruntime` dynamically via `dlopen`. It
-requires cgo and a path set via `ort.SetSharedLibraryPath("/path/to/libonnxruntime.so")`.
-ORT Session initialization is expensive — create once, reuse `Run()` calls (thread-safe).
-
-**Tasks:**
-
-- [x] Add dependency
-  - [x] `go get github.com/yalue/onnxruntime_go` (v1.26.0)
-
-- [x] Define `Engine` interface
-
-  ```go
-  // engine/engine.go
-  package engine
-
-  // EngineInfo describes the loaded model and runtime configuration.
-  type EngineInfo struct {
-      InputName  string
-      OutputName string
-      InputRank  int     // number of tensor dimensions
-      Provider   string  // "CPU", "CUDA", "CoreML", etc.
-      OrtVersion string
-  }
-
-  // Engine is the minimal interface for running audio super-resolution inference.
-  type Engine interface {
-      // Run performs inference. Input is float32 PCM [-1,1].
-      // Returns upsampled output, or an error.
-      Run(input []float32) ([]float32, error)
-      Close() error
-      Info() EngineInfo
-  }
-  ```
-
-  - [x] Write test: `TestEngineInterface_Compile` (compile-time interface check via `var _ Engine = (*ort.Engine)(nil)`)
-  - [x] Run test: `go test ./engine/... -v` → expect PASS
-
-- [x] Implement ORT engine (skeleton — session wiring is a TODO)
-
-  ```go
-  // engine/ort/ort.go (skeleton)
-  package ort
-
-  import (
-      "fmt"
-      ort "github.com/yalue/onnxruntime_go"
-      "github.com/MeKo-Christian/flashsr-go/engine"
-  )
-
-  type Config struct {
-      LibraryPath    string // path to libonnxruntime shared library
-      NumThreadsIntra int   // default: 1
-      NumThreadsInter int   // default: 1
-      InputName      string // default: auto-detect ("x" or "audio_values")
-      OutputName     string // default: auto-detect ("output" or "reconstruction")
-  }
-
-  type Engine struct {
-      session    *ort.DynamicAdvancedSession
-      inputName  string
-      outputName string
-      inputRank  int
-  }
-
-  func New(modelBytes []byte, cfg Config) (*Engine, error) {
-      // 1. ort.SetSharedLibraryPath(cfg.LibraryPath)
-      // 2. ort.InitializeEnvironment()
-      // 3. Build SessionOptions with intra/inter thread counts
-      // 4. Create session from modelBytes
-      // 5. Introspect input/output names and rank
-      // 6. Return &Engine{...}
-  }
-
-  func (e *Engine) Run(input []float32) ([]float32, error) { ... }
-  func (e *Engine) Close() error                           { ... }
-  func (e *Engine) Info() engine.EngineInfo                { ... }
-  ```
-
-  - [x] Write test: `TestORT_RunSmoke` (skip guard in place for missing ORT lib)
-  - [x] Write test: `TestNew_NoLibPath`, `TestNew_EmptyModel`
-  - [x] Run: `go test ./engine/ort/... -v` → PASS (smoke skips without ORT lib)
-
-- [x] Input tensor shape handling (pending real ORT session)
-  - [x] Support both `[1, N]` (README shape) and `[1, 1, N]` (streaming code shape)
-  - [x] Detect rank from model metadata at session init time
-  - [x] Write test: `TestORT_ShapeDetection` (unit-level, using mock)
-  - [x] Commit: `feat(engine/ort): detect tensor rank from model metadata`
-
-- [x] Input tensor shape handling
-  - [x] `GetInputOutputInfoWithONNXData` detects names, ranks, element types at `New()` time
-  - [x] `inputShape`/`outputShape` helpers produce `[1,N]` (rank 2) or `[1,1,N]` (rank 3)
-  - [x] `Config.UpsampleRatio` controls output allocation (default: 3)
-
-- [x] ORT environment singleton guard
-  - [x] `SetSharedLibraryPath` + `InitializeEnvironment` both inside `initOnce.Do`
-  - [x] Use `sync.Once`
-  - [x] Write test: `TestConcurrentNew` — 5 goroutines concurrently, verify no panic/error
-
-Exit criteria:
-
-- [x] `go test ./engine/... -v` passes (integration tests skip without ORT lib).
-- [x] Interface check compiles.
-- [x] `go vet ./...` clean.
-- [x] `go test -race ./...` passes.
+- Implemented `engine.Engine` interface and ORT-backed engine in `engine/ort`.
+- Added ORT env/session initialization guards and input/output tensor discovery.
+- Covered with unit tests; integration smoke tests skip cleanly when ORT shared lib is missing.
 
 ---
 
 ### Phase 2: Model Handling
 
-**Goal:** A model loader that returns `[]byte` from embedded ONNX, a file path, or
-`FLASHSR_MODEL_PATH` env var. Hash verification against known SHA256.
+**Status:** ✅ Complete.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `model/model.go`
-- Create: `model/model_test.go`
-- Create: `assets/model.onnx` (download + embed)
-
-**Tasks:**
-
-- [x] Download model
-  - [x] `flashsr model download` → `assets/model.onnx` (487 kB, YatharthS/FlashSR public mirror)
-  - [x] Verify SHA256: `e255c76b227f16f7f392cc43677c38bd2c5aa129f042a2ba3eb03fb29e470c7a`
-  - [x] Populate `ExpectedSHA256` constant in `model.go`
-  - [x] Enable embed via `assets/assets.go` package (go:embed constraint: no `../`)
-  - [x] Commit: `chore(assets): embed FlashSR ONNX model (Apache-2.0)`
-
-- [x] Implement `model download` CLI subcommand (`model/download.go`, `cmd/flashsr/cmd_model*.go`)
-  - [x] HF download with progress reporting + SHA256 verification
-  - [x] Atomic write (`.tmp` → rename)
-  - [x] Skip-if-already-present via ETag SHA256
-  - [x] `AccessDeniedError` for 401/403
-  - [x] Default repo: `YatharthS/FlashSR` (public mirror; hance-ai/FlashSR is gated)
-
-- [x] Implement model loader (`model/model.go`)
-  - [x] Priority chain: env → Config.Path → embedded
-  - [x] `verifyHash` helper using `crypto/sha256`
-  - [x] Write test: `TestLoad_Embedded` — embedded model loads successfully
-  - [x] Write test: `TestLoad_FromPath` — loads from temp file
-  - [x] Write test: `TestLoad_EnvOverride` — env takes priority over Config.Path
-  - [x] Write test: `TestLoad_HashVerification_BadData` — hash mismatch returns error
-  - [x] Run: `go test ./model/... -v` → all PASS
-
-Exit criteria:
-
-- [x] `go test ./model/... -v` all pass.
-- [x] Hash pinning guards against accidental model swap.
+- Embedded the FlashSR ONNX model and added a loader with env/path overrides.
+- Implemented `flashsr model download` with SHA256 verification and atomic writes.
+- Added model tests (embedded/path/env/hash-mismatch).
 
 ---
 
 ### Phase 3: Public Library & Batch Inference
 
-**Goal:** The `flashsr` package — a one-stop shop for "give me 48 kHz audio".
+**Status:** ✅ Complete.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `flashsr/flashsr.go`
-- Create: `flashsr/errors.go`
-- Create: `flashsr/flashsr_test.go`
-
-**Tasks:**
-
-- [x] Write tests with mock engine (`mockEngine` — no ORT required)
-  - [x] `TestUpsample_Shape` — output is 3× input length
-  - [x] `TestUpsample_EmptyInput` — error on nil input
-  - [x] `TestUpsample_ClampInput` — out-of-range samples clamped; output ≤ 1.0
-  - [x] `TestUpsample_NoNaN` — no NaN/Inf in output
-  - [x] `TestUpsample_PeakNormalized` — peak ≤ 1.0
-  - [x] `TestNew_EngineInitError` — errors.Is check on typed sentinels
-  - [x] Run: `go test ./flashsr/... -v` → all PASS
-
-- [x] Implement `flashsr.go`
-  - [x] `New(cfg Config) (*Upsampler, error)` wiring model + ort engine
-  - [x] `NewWithEngine(eng engine.Engine)` for mock-based tests
-  - [x] `Upsample16kTo48k` with clamp + `eng.Run` + peak-norm
-  - [x] `EngineInfo()`, `Close()`
-  - [x] Commit: `feat(flashsr): implement Upsampler with batch Upsample16kTo48k`
-
-- [x] Write `errors.go` with `ErrModelLoad`, `ErrEngineInit`, `ErrInferFailed`
-  - [x] Commit: `feat(flashsr): add typed error sentinels`
-
-Exit criteria:
-
-- [x] `go test ./flashsr/... -v` passes (mock-backed tests all pass; ORT-backed tests skip).
-- [x] `go vet ./...` clean.
+- Implemented the public `flashsr` package (`New`, `Close`, `Upsample16kTo48k`, config/errors).
+- Batch path includes input clamping and output peak normalization.
+- Tests are mock-backed (no ORT dependency) and validate basic invariants.
 
 ---
 
 ### Phase 4: WAV I/O + CLI
 
-**Goal:** A `flashsr upsample` CLI that converts WAV files. A `flashsr doctor` subcommand that
-verifies the ORT library path and prints version information.
+**Status:** ✅ Complete.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `cmd/flashsr/main.go`
-- Create: `cmd/flashsr/cmd_upsample.go`
-- Create: `cmd/flashsr/cmd_doctor.go`
-
-**Background:** Use `github.com/cwbudde/wav` for WAV reading/writing (already used in
-`go-call-pocket-tts`). It provides `wav.Header` parsing and raw PCM access.
-
-**Tasks:**
-
-- [x] Add wav dependency: `go get github.com/cwbudde/wav`
-
-- [x] Write tests (`cmd/flashsr/upsample_test.go`)
-  - [x] `TestWAVRoundtrip` — encode/decode roundtrip without ORT
-  - [x] `TestUpsample_RejectsNon16k` — 44100 Hz input rejected with clear error
-  - [x] `TestUpsample_MockEngine` — full WAV I/O pipeline via mock engine (no ORT)
-  - [x] `TestCLI_Upsample_Basic` — full pipeline (skips without `FLASHSR_ORT_LIB`)
-  - [x] `TestUpsample_Streaming` — streaming path (skips without `FLASHSR_ORT_LIB`)
-
-- [x] Implement Cobra CLI scaffold
-  - [x] `main.go` — `rootCmd()` with `SilenceUsage`, env-var help text
-  - [x] `cmd_upsample.go` — flags + `runUpsample` + `runUpsampleWithUpsampler`
-  - [x] `cmd_doctor.go` — model + engine diagnostics with structured output
-  - [x] `wav.go` — `readWAV` / `writeWAV` helpers using `cwbudde/wav`
-  - [x] Assert SampleRate == 16000 on input; reject others with clear message
-  - [x] Streaming mode wired: `stream.New(u.Engine(), ...)` via new `Engine()` accessor
-  - [x] `flashsr.Upsampler.Engine()` accessor added to expose engine for streaming
-
-- [x] `go build ./cmd/flashsr` succeeds
-- [x] Run: `go test ./cmd/flashsr/... -v` → 3 PASS, 2 SKIP (ORT)
-
-Exit criteria:
-
-- [x] `go build ./cmd/flashsr` succeeds.
-- [x] `go test ./cmd/flashsr/... -v` passes (skips gracefully without ORT lib).
-- [x] `flashsr --help` shows meaningful subcommand descriptions.
+- Implemented `flashsr` CLI with `upsample` + `doctor` subcommands and WAV helpers.
+- CLI tests cover WAV roundtrip + mock-engine pipeline; ORT-dependent tests skip via env guard.
+- Streaming mode is wired behind a flag using the shared engine.
 
 ---
 
 ### Phase 5: Streaming Mode
 
-**Goal:** A `Streamer` that processes real-time chunks with upstream-compatible overlap (500
-samples), crossfade, and first-chunk trimming (−2000 samples).
+**Status:** ✅ Complete.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `stream/stream.go`
-- Create: `stream/stream_test.go`
-
-**Background (upstream Python reference):**
-
-- Input ring buffer: 30 s @ 16 kHz = 480 000 samples max.
-- Chunk size: default 4000 samples (250 ms @ 16 kHz).
-- Overlap: last 500 input samples prepended to next chunk.
-- Inference shape: `[1, 1, chunkSize+500]`.
-- Output alignment: use `upsampled[1000:]` (skip first 1000 output samples = `1500 - 500`).
-- Crossfade: linear ramp over `500 * 3 = 1500` output samples between previous tail and new head.
-- First chunk: trim 2000 output samples from the first yield (`get_output`).
-
-**Tasks:**
-
-- [x] Write tests
-  - [x] `TestStreamer_Write_Read_Basic` — buffered output after one full chunk
-  - [x] `TestStreamer_OutputNoNaN` — no NaN/Inf in two-chunk output
-  - [x] `TestStreamer_Reset_Deterministic` — same input after Reset → identical output
-  - [x] `TestStreamer_Flush` — partial chunk flushed correctly
-  - [x] `TestStreamer_CrossfadeSmooth` — max jump < 1.5 for mock engine
-  - [x] Run: `go test ./stream/... -v` → all PASS
-
-- [x] Implement `stream.go`
-
-  ```go
-  package stream
-
-  type StreamConfig struct {
-      ChunkSize   int // default: 4000 (samples @ 16 kHz)
-      Overlap     int // default: 500
-      BufferCap   int // default: 480000 (30s @ 16kHz)
-  }
-
-  type Streamer struct {
-      eng         engine.Engine
-      cfg         StreamConfig
-      inputBuf    []float32    // ring/growing buffer
-      overlapBuf  []float32    // last `overlap` samples of input
-      outputBuf   []float32    // accumulated output
-      firstChunk  bool
-      crossfadeTail []float32  // last 1500 output samples for next crossfade
-  }
-
-  func New(eng engine.Engine, cfg StreamConfig) *Streamer
-
-  // Write pushes new input samples into the streamer.
-  func (s *Streamer) Write(samples []float32) error
-
-  // Read pops up to len(out) output samples.
-  // Returns n, io.EOF when flushed.
-  func (s *Streamer) Read(out []float32) (int, error)
-
-  // Flush signals end of input; processes remaining buffered samples.
-  func (s *Streamer) Flush() error
-
-  // Reset clears all internal state.
-  func (s *Streamer) Reset()
-  ```
-
-  - [x] Input buffer backed by `[]float32` with `append`
-  - [x] `processChunk`: prepend overlapIn → engine.Run → skip 1000 → crossfade → trim first chunk
-  - [x] `applyCrossfade`: linear ramp over `overlap*3` output samples
-  - [x] `Write`, `Read`, `Flush`, `Reset`, `Buffered` all implemented
-  - [ ] Commit: `feat(stream): implement Streamer with overlap/crossfade/first-chunk trim`
-
-- [x] `--stream` flag added to `cmd_upsample.go` (WAV decode wiring pending Phase 4)
-  - [ ] Commit: `feat(cmd): add --stream flag to upsample subcommand`
-
-Exit criteria:
-
-- [x] `go test ./stream/... -v` all pass.
-- [x] `go test -race ./...` passes.
+- Implemented streaming wrapper with overlap/crossfade + first-chunk trimming.
+- Added tests for buffering/flush/reset determinism and basic smoothness invariants.
+- CLI supports a streaming mode flag.
 
 ---
 
@@ -616,75 +297,35 @@ np.save("ref_batch.npy", out)
 
 **Tasks:**
 
-- [ ] Write `internal/testutil` helpers
+- [x] Write `internal/testutil` helpers
+  - [x] `signals.go`: `Sine`, `SineSweep`, `PinkNoise`, `PeakAbs`
+  - [x] `compare.go`: `RMSError` (dB), `RMS`, `HasNaNOrInf`
+  - [x] `npy.go`: `LoadNPYFloat32` — minimal NPY v1/v2 reader for `<f4` arrays
 
-  ```go
-  // sinef32(freq, sampleRate, numSamples) []float32
-  // pinkNoisef32(seed int64, numSamples int) []float32
-  // loadWAV(path string) ([]float32, int, error)
-  // saveWAV(path string, pcm []float32, sampleRate int) error
-  // rmsError(a, b []float32) float64   // returns RMS in dB
-  // peakAbs(a []float32) float32
-  ```
+- [ ] Generate Python reference fixtures (manual step — requires Python + onnxruntime)
+  - [x] Created `scripts/gen_fixtures.py` — runs batch + streaming inference, saves `.npy`
+  - [x] Documented regeneration steps in `internal/testutil/fixtures/README.md`
+  - [ ] **TODO**: Run `python3 scripts/gen_fixtures.py` with real model to produce `.npy` files
 
-  - [ ] Commit: `test(internal): add testutil signal generators and comparison helpers`
+- [x] Write golden tests (batch) — `flashsr/golden_test.go` (`//go:build golden`)
+  - [x] `TestGolden_Batch_Sine` — 440 Hz sine, RMS error ≤ −40 dB
+  - [x] `TestGolden_Batch_PinkNoise` — pink noise (seed=42)
+  - [x] `TestGolden_Batch_SineSweep` — 50–4000 Hz sweep
+  - [x] Skip gracefully: fixture not found → skip; `FLASHSR_ORT_LIB` not set → skip
 
-- [ ] Generate Python reference fixtures (manual step)
-  - [ ] Create 3 test signals: 440 Hz sine (1 s), pink noise (1 s), and a 2 s sine sweep (50 Hz → 4 kHz)
-  - [ ] Run Python upstream `FASRONNX` in batch mode for each → save as `fixtures/ref_batch_sine.npy`, etc.
-  - [ ] Run Python upstream `StreamingFASRONNX` in streaming mode → save as `fixtures/ref_stream_sine.npy`, etc.
-  - [ ] Document how to regenerate in `internal/testutil/fixtures/README.md`
-  - [ ] Commit: `test(fixtures): add Python reference outputs for golden tests`
+- [x] Write golden tests (streaming) — `stream/golden_test.go` (`//go:build golden`)
+  - [x] `TestGolden_Stream_Sine` — 4000-sample chunks, 5% length tolerance
+  - [x] `TestGolden_Stream_PinkNoise`
 
-- [ ] Write golden tests (batch)
-
-  ```go
-  // flashsr/golden_test.go
-  // build tag: golden (run with: go test -tags golden ./...)
-
-  func TestGolden_Batch_Sine(t *testing.T) {
-      u := requireUpsampler(t)
-      input := loadFixture(t, "sine_16k.wav")
-      ref := loadNPY(t, "ref_batch_sine.npy")
-      out, err := u.Upsample16kTo48k(input)
-      require.NoError(t, err)
-      rmsDB := rmsError(out, ref)
-      assert.Less(t, rmsDB, -40.0, "RMS error should be < -40 dB vs Python reference")
-  }
-  ```
-
-  - [ ] Write similar tests for pink noise and sine sweep
-  - [ ] Run: `go test -tags golden ./flashsr/... -v` → all PASS
-  - [ ] Commit: `test(golden): add batch golden tests vs Python reference`
-
-- [ ] Write golden tests (streaming)
-
-  ```go
-  // stream/golden_test.go (build tag: golden)
-
-  func TestGolden_Stream_Sine(t *testing.T) {
-      // Feed sine signal in 4000-sample chunks
-      // Compare accumulated output to ref_stream_sine.npy
-      // Allow 5% length difference due to trimming
-  }
-  ```
-
-  - [ ] Run: `go test -tags golden ./stream/... -v` → all PASS
-  - [ ] Commit: `test(golden): add streaming golden tests vs Python reference`
-
-- [ ] Add property invariant tests (no build tag needed)
-  ```go
-  func TestProperty_NoNaN(t *testing.T)       // covers batch + stream
-  func TestProperty_PeakNormalized(t *testing.T)  // peak ≤ 1.0
-  func TestProperty_OutputRate(t *testing.T)  // output len ≈ input len * 3
-  ```
-
-  - [ ] Commit: `test: add property invariant tests (no-NaN, peak, rate)`
+- [x] Add property invariant tests (no build tag)
+  - [x] `flashsr/property_test.go`: `TestProperty_NoNaN`, `TestProperty_PeakNormalized`, `TestProperty_OutputRate`
+  - [x] `stream/property_test.go`: `TestProperty_Stream_NoNaN`, `TestProperty_Stream_OutputRate`
+  - [x] All signals: 440 Hz sine, sine sweep 50–4000 Hz, pink noise (seed=42)
 
 Exit criteria:
 
-- [ ] `go test -tags golden ./... -v` all pass with RMS error ≤ −40 dB vs Python.
-- [ ] `go test ./...` (without tag) all property tests pass.
+- [ ] `go test -tags golden ./... -v` all pass with RMS error ≤ −40 dB vs Python. ← pending fixture generation
+- [x] `go test ./...` (without tag) all property tests pass.
 
 ---
 
@@ -739,40 +380,17 @@ Exit criteria:
 
 ### Phase 8: CI + Release Artifacts + Licensing
 
-**Goal:** Full CI with lint/test/race/golden; goreleaser config producing per-platform
-binary bundles including the ORT shared library notice.
+**Status:** 🔄 In Progress.
 
-**Files:**
+**Done (condensed):**
 
-- Modify: `.github/workflows/ci.yml`
-- Create: `.goreleaser.yml`
-- Create: `THIRD_PARTY_NOTICES.md`
+- CI is in place and already runs: tests, race, vet, and `golangci-lint` (pinned), with golden tests gated behind an ORT secret/env.
 
-**Tasks:**
+**Remaining:**
 
-- [x] Extend CI (`.github/workflows/ci.yml`)
-  - [x] Add `go test -race ./...` step
-  - [x] Add `golangci-lint` step (pinned `v1.63`)
-  - [x] Add `go vet ./...` step
-  - [x] Conditionally run golden tests if `FLASHSR_ORT_LIB` secret is set
-  - [ ] Commit: `ci: add race, vet, lint, and conditional golden test steps`
-
-- [ ] Write `THIRD_PARTY_NOTICES.md`
-  - [ ] FlashSR model: Apache-2.0, HF repo link, SHA256 of pinned artefact
-  - [ ] ONNX Runtime: MIT
-  - [ ] `yalue/onnxruntime_go`: MIT (or applicable license)
-  - [ ] `cwbudde/algo-dsp`: MIT (optional / build-tag only)
-  - [ ] Commit: `chore: add THIRD_PARTY_NOTICES.md`
-
-- [ ] Configure GoReleaser
-  - [ ] Targets: `linux/amd64`, `darwin/amd64`, `darwin/arm64`
-  - [ ] Each archive includes: `flashsr` binary, `README.md`, `NOTICE`, `THIRD_PARTY_NOTICES.md`
-  - [ ] Commit: `ci: add goreleaser config for multi-platform releases`
-
-- [ ] Tag and test snapshot release
-  - [ ] `goreleaser release --snapshot --clean`
-  - [ ] Verify archives unpack and binary runs `--help`
-  - [ ] Commit: `chore: verify goreleaser snapshot build`
+- Add `THIRD_PARTY_NOTICES.md` with the exact attributions + pinned model hash.
+- Add `.goreleaser.yml` and produce snapshot artifacts for the main target platforms.
+- Verify release archives contain `NOTICE` + `THIRD_PARTY_NOTICES.md` and run `flashsr --help`.
 
 Exit criteria:
 
@@ -784,40 +402,17 @@ Exit criteria:
 
 ### Phase 9: Linear Resampler (Multi-Rate v1.1)
 
-**Goal:** Accept inputs at rates other than 16 kHz by resampling down to 16 kHz first
-(covers Pocket-TTS 24 kHz → 16 kHz → FlashSR → 48 kHz).
+**Status:** 🟡 Partial.
 
-**Files:**
+**Done (condensed):**
 
-- Create: `resample/resample.go`
-- Create: `resample/linear.go`
-- Create: `resample/resample_test.go`
+- Added `resample` package with a stateful linear resampler and solid unit tests.
+- Resampler supports streaming-style `Process(...)` calls without boundary jumps.
 
-**Tasks:**
+**Remaining (to make this actually usable end-to-end):**
 
-- [x] Define `Resampler` interface (`resample/resample.go`)
-  - [x] `Process(in []float32) ([]float32, error)`
-  - [x] `Reset()`
-  - [x] `NewFor(inRate, outRate int) (Resampler, error)` with passthrough for equal rates
-  - [ ] Commit: `feat(resample): define Resampler interface`
-
-- [x] Write tests
-  - [x] `TestNewFor_SameRate` — passthrough returns equal-length output
-  - [x] `TestNewFor_InvalidRate` — error on zero rates
-  - [x] `TestLinear_24kTo16k_Length` — output ≈ 16000 samples (±2)
-  - [x] `TestLinear_16kTo48k_Length` — output ≈ 48000 samples (±2)
-  - [x] `TestLinear_Reset` — same input after Reset → same length
-  - [x] `TestLinear_StreamingNoBoundaryJumps` — max delta < 0.35 across chunk boundaries
-  - [x] Run: `go test ./resample/... -v` → all PASS
-
-- [x] Implement `linear.go` (`//go:build !algodsp`)
-  - [x] Stateful fractional phase preserved across `Process` calls
-  - [x] `prev` sample carried for cross-chunk interpolation
-  - [ ] Commit: `feat(resample): implement stateful linear resampler`
-
-- [ ] Wire into `flashsr.New` via `Config.InputRate int`
-  - [ ] If `InputRate != 0 && InputRate != 16000`, insert resampler stage before ORT
-  - [ ] Commit: `feat(flashsr): add multi-rate input via linear resampler`
+- Wire resampling into the library (e.g., `flashsr.Config.InputRate` → resample to 16 kHz pre-inference).
+- Expose the input rate in the CLI (e.g., `--input-rate 24000`) and verify the full WAV pipeline.
 
 Exit criteria:
 

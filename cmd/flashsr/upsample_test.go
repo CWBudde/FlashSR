@@ -49,23 +49,38 @@ func TestWAVRoundtrip(t *testing.T) {
 	}
 }
 
-// TestUpsample_RejectsNon16k ensures a non-16kHz input is rejected.
-func TestUpsample_RejectsNon16k(t *testing.T) {
+// TestUpsample_44kInputViaMock verifies that a 44.1kHz WAV flows through the
+// pipeline without being rejected (non-16kHz is now resampled, not refused).
+// Uses a mock engine — no ORT required.
+func TestUpsample_44kInputViaMock(t *testing.T) {
+	const sr = 44100
+
 	dir := t.TempDir()
 	inPath := dir + "/in44k.wav"
 	outPath := dir + "/out.wav"
 
-	// Write a 44100 Hz WAV.
-	if err := writeWAV(inPath, makeSineWAV(440, 44100, 4410), 44100); err != nil {
-		t.Fatalf("write WAV: %v", err)
+	if err := writeWAV(inPath, makeSineWAV(440, sr, sr/10), sr); err != nil {
+		t.Fatalf("write 44.1kHz WAV: %v", err)
 	}
 
-	err := runUpsample(upsampleFlags{
+	u := flashsr.NewWithEngine(&mockScaleEngine{})
+
+	// runUpsampleWithUpsampler reads the WAV and runs inference regardless of
+	// the WAV's sample rate; the mock 3×-scales whatever it receives.
+	if err := runUpsampleWithUpsampler(u, upsampleFlags{
 		input:  inPath,
 		output: outPath,
-	})
-	if err == nil {
-		t.Fatal("expected error for non-16kHz input, got nil")
+	}); err != nil {
+		t.Fatalf("runUpsampleWithUpsampler (44.1kHz): %v", err)
+	}
+
+	_, gotSR, err := readWAV(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+
+	if gotSR != 48000 {
+		t.Errorf("output sample rate: got %d, want 48000", gotSR)
 	}
 }
 
@@ -105,6 +120,42 @@ func TestUpsample_MockEngine(t *testing.T) {
 
 	if len(samples) == 0 {
 		t.Error("output has no samples")
+	}
+}
+
+// TestUpsample_24kInput verifies that a 24kHz WAV is resampled to 16kHz before
+// inference (end-to-end, mock engine, no ORT required).
+func TestUpsample_24kInput(t *testing.T) {
+	const (
+		sr   = 24000
+		n    = 4800 // 0.2 s @ 24kHz
+		freq = 440
+	)
+
+	dir := t.TempDir()
+	inPath := dir + "/in24k.wav"
+	outPath := dir + "/out48k.wav"
+
+	if err := writeWAV(inPath, makeSineWAV(freq, sr, n), sr); err != nil {
+		t.Fatalf("write 24kHz WAV: %v", err)
+	}
+
+	u := flashsr.NewWithEngine(&mockScaleEngine{})
+
+	if err := runUpsampleWithUpsampler(u, upsampleFlags{
+		input:  inPath,
+		output: outPath,
+	}); err != nil {
+		t.Fatalf("runUpsampleWithUpsampler (24kHz): %v", err)
+	}
+
+	_, gotSR, err := readWAV(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+
+	if gotSR != 48000 {
+		t.Errorf("output sample rate: got %d, want 48000", gotSR)
 	}
 }
 
