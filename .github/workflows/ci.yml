@@ -7,11 +7,13 @@ on:
 
 jobs:
   test:
-    name: Test (${{ matrix.go }})
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.go }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        go: ["1.23", "1.24"]
+        go: ["1.24", "1.25"]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +22,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
+          cache: true
 
       - name: go vet
         run: go vet ./...
@@ -28,8 +31,8 @@ jobs:
         run: go test -race ./...
 
       - name: Golden tests
-        if: ${{ env.FLASHSR_ORT_LIB != '' }}
-        run: go test -tags golden ./...
+        if: ${{ secrets.FLASHSR_ORT_LIB != '' }}
+        run: go test -tags golden -v ./...
         env:
           FLASHSR_ORT_LIB: ${{ secrets.FLASHSR_ORT_LIB }}
           FLASHSR_MODEL_PATH: ${{ secrets.FLASHSR_MODEL_PATH }}
@@ -37,15 +40,17 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.25"
+          cache: false
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.63
+          version: v2.1

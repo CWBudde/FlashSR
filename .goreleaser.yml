@@ -1,0 +1,72 @@
+version: 2
+
+project_name: flashsr
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: flashsr
+    main: ./cmd/flashsr
+    binary: flashsr
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    # cgo requires a C compiler; cross-compilation needs appropriate toolchains.
+    # For simple snapshot builds on native host, CGO_ENABLED=1 works out of the box.
+
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - NOTICE
+      - THIRD_PARTY_NOTICES.md
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ .Tag }}-next"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+release:
+  draft: true
+  replace_existing_draft: true
+  header: |
+    ## FlashSR-Go {{ .Tag }}
+
+    **Prerequisites:** Download `libonnxruntime` for your platform and set
+    `FLASHSR_ORT_LIB=/path/to/libonnxruntime.so` (Linux) or equivalent.
+    Run `flashsr doctor` to verify your setup.

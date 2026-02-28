@@ -1,7 +1,8 @@
 FlashSR-Go
 Copyright 2026 MeKo-Christian
 
-This product includes software and model artefacts from third parties:
+This product includes software and model artefacts from third parties.
+See THIRD_PARTY_NOTICES.md for full attribution, version pins, and license texts.
 
 ---
 
@@ -9,7 +10,7 @@ FlashSR ONNX Model
 Copyright (c) hance-ai
 Licensed under the Apache License, Version 2.0.
 Source: https://huggingface.co/hance-ai/FlashSR
-Pinned artefact: onnx/model.onnx (SHA256 TBD — see model/model.go)
+Pinned SHA256: e255c76b227f16f7f392cc43677c38bd2c5aa129f042a2ba3eb03fb29e470c7a
 
 ---
 
@@ -27,7 +28,22 @@ Source: https://github.com/yalue/onnxruntime_go
 
 ---
 
-algo-dsp (optional, build tag: algodsp)
+algo-dsp (FIR design math, vendored source)
 Copyright (c) cwbudde
 Licensed under the MIT License.
 Source: https://github.com/cwbudde/algo-dsp
+Note: only resample/fir_design.go is derived from this project; it is not a module dependency.
+
+---
+
+wav (Go WAV codec)
+Copyright (c) cwbudde
+Licensed under the MIT License.
+Source: https://github.com/cwbudde/wav
+
+---
+
+go-audio/audio
+Copyright (c) go-audio
+Licensed under the MIT License.
+Source: https://github.com/go-audio/audio
