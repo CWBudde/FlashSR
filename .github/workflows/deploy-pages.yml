@@ -1,0 +1,72 @@
+name: Deploy Web Demo to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.x
+
+      - name: Build Go wasm kernel
+        run: |
+          mkdir -p web/dist
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o web/dist/flashsr-kernel.wasm ./cmd/flashsr-wasm
+
+      - name: Copy Go wasm runtime JS
+        run: |
+          GO_WASM_EXEC=""
+          for candidate in "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$(go env GOROOT)/misc/wasm/wasm_exec.js"; do
+            if [[ -f $candidate ]]; then
+              GO_WASM_EXEC="$candidate"
+              break
+            fi
+          done
+          if [[ -z $GO_WASM_EXEC ]]; then
+            echo "wasm_exec.js not found under GOROOT" >&2
+            exit 1
+          fi
+          cp "$GO_WASM_EXEC" web/dist/wasm_exec.js
+
+      - name: Copy static web assets
+        run: cp web/index.html web/main.js web/styles.css web/dist/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

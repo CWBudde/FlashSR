@@ -28,3 +28,7 @@ assets/models/
 # Test outputs
 coverage.out
 test-results/
+
+# Web demo build outputs
+web/dist/
+/flashsr-wasm

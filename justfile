@@ -60,3 +60,8 @@ tidy:
 # Clean build artifacts
 clean:
     rm -f coverage.out coverage.html bin/flashsr
+
+# Build and serve the web demo locally
+web-demo:
+    ./web/build-wasm.sh
+    python3 -m http.server 8080 -d web/dist

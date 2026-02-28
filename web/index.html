@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlashSR Web Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="panel hero">
+        <p class="eyebrow">Go WASM Kernel Demo</p>
+        <h1>FlashSR WAV Quality Check</h1>
+        <p class="subtitle">
+          Upload a WAV file. If it is below <strong>48 kHz</strong>, the Go kernel
+          resamples it to <strong>48 kHz</strong>.
+        </p>
+      </section>
+
+      <section class="panel controls">
+        <label class="field">
+          <span class="label">WAV file</span>
+          <input id="wav-file" type="file" accept=".wav,audio/wav" />
+        </label>
+
+        <label class="field">
+          <span class="label">Resampler quality</span>
+          <select id="quality">
+            <option value="balanced">balanced (recommended)</option>
+            <option value="best">best</option>
+            <option value="fast">fast</option>
+          </select>
+        </label>
+
+        <div class="actions">
+          <button id="run" class="action" type="button" disabled>Analyze and Process</button>
+          <button id="download" class="ghost" type="button" disabled>Download Output WAV</button>
+        </div>
+      </section>
+
+      <section class="panel info-grid">
+        <article>
+          <h2>Kernel</h2>
+          <pre id="kernel-status" class="status">Loading wasm kernel...</pre>
+        </article>
+        <article>
+          <h2>Input Analysis</h2>
+          <pre id="analysis-status" class="status">No file selected.</pre>
+        </article>
+        <article>
+          <h2>Result</h2>
+          <pre id="result-status" class="status">No processing run yet.</pre>
+        </article>
+      </section>
+
+      <section class="panel players">
+        <div class="player-wrap">
+          <h2>Input Preview</h2>
+          <audio id="input-player" controls preload="metadata"></audio>
+        </div>
+        <div class="player-wrap">
+          <h2>Output Preview</h2>
+          <audio id="output-player" controls preload="metadata"></audio>
+        </div>
+      </section>
+    </main>
+
+    <script src="./wasm_exec.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
