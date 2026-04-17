@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/resample"
+	"github.com/cwbudde/flashsr-go/resample"
 )
 
 func TestNewFor_SameRate(t *testing.T) {

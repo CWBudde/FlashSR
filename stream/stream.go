@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/engine"
 )
 
 const (

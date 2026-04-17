@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/model"
+	"github.com/cwbudde/flashsr-go/model"
 )
 
 func TestLoad_Embedded(t *testing.T) {

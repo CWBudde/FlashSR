@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
-	"github.com/MeKo-Christian/flashsr-go/model"
+	"github.com/cwbudde/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/model"
 	"github.com/spf13/cobra"
 )
 

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
-	"github.com/MeKo-Christian/flashsr-go/internal/testutil"
+	"github.com/cwbudde/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/internal/testutil"
 )
 
 const fixturesDir = "../internal/testutil/fixtures"

@@ -3,8 +3,8 @@ package stream_test
 import (
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/internal/testutil"
-	"github.com/MeKo-Christian/flashsr-go/stream"
+	"github.com/cwbudde/flashsr-go/internal/testutil"
+	"github.com/cwbudde/flashsr-go/stream"
 )
 
 // TestProperty_Stream_NoNaN verifies streaming output has no NaN or Inf.

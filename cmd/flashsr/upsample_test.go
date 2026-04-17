@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/flashsr"
 )
 
 // TestWAVRoundtrip verifies writeWAV → readWAV preserves sample rate and

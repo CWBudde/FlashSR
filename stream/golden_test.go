@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/engine/ort"
-	"github.com/MeKo-Christian/flashsr-go/internal/testutil"
-	"github.com/MeKo-Christian/flashsr-go/model"
-	"github.com/MeKo-Christian/flashsr-go/stream"
+	"github.com/cwbudde/flashsr-go/engine/ort"
+	"github.com/cwbudde/flashsr-go/internal/testutil"
+	"github.com/cwbudde/flashsr-go/model"
+	"github.com/cwbudde/flashsr-go/stream"
 )
 
 const streamFixturesDir = "../internal/testutil/fixtures"

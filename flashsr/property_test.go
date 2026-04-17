@@ -3,8 +3,8 @@ package flashsr_test
 import (
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
-	"github.com/MeKo-Christian/flashsr-go/internal/testutil"
+	"github.com/cwbudde/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/internal/testutil"
 )
 
 // TestProperty_NoNaN verifies batch output contains no NaN or Inf values.

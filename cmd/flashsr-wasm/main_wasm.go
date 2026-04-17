@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/MeKo-Christian/flashsr-go/resample"
+	"github.com/cwbudde/flashsr-go/resample"
 	"github.com/cwbudde/wav"
 	goaudio "github.com/go-audio/audio"
 )

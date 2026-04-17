@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
-	"github.com/MeKo-Christian/flashsr-go/engine/ort"
-	"github.com/MeKo-Christian/flashsr-go/model"
-	"github.com/MeKo-Christian/flashsr-go/resample"
+	"github.com/cwbudde/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/engine/ort"
+	"github.com/cwbudde/flashsr-go/model"
+	"github.com/cwbudde/flashsr-go/resample"
 )
 
 // Config controls how the Upsampler is initialized.

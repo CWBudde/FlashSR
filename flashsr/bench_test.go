@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/flashsr"
 )
 
 // requireOrtUpsamplerB creates a real ORT-backed Upsampler for benchmarks.

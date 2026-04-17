@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/MeKo-Christian/flashsr-go/model"
+	"github.com/cwbudde/flashsr-go/model"
 	"github.com/spf13/cobra"
 )
 

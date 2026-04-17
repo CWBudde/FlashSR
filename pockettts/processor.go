@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
-	"github.com/MeKo-Christian/flashsr-go/resample"
+	"github.com/cwbudde/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/resample"
 )
 
 // WAVResult mirrors the WAV output produced by go-call-pocket-tts to avoid

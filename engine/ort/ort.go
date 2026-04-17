@@ -13,7 +13,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/engine"
 	ort "github.com/yalue/onnxruntime_go"
 )
 

@@ -4,9 +4,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
-	"github.com/MeKo-Christian/flashsr-go/pockettts"
+	"github.com/cwbudde/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/pockettts"
 )
 
 // mockEngine triples every sample (simulates 3× upsampling).

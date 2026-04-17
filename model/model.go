@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/MeKo-Christian/flashsr-go/assets"
+	"github.com/cwbudde/flashsr-go/assets"
 )
 
 // ExpectedSHA256 is the SHA256 hex digest of the pinned model artefact.

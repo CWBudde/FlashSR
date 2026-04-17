@@ -1,4 +1,4 @@
-module github.com/MeKo-Christian/flashsr-go
+module github.com/cwbudde/flashsr-go
 
 go 1.25.0
 

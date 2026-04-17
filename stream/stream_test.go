@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
-	"github.com/MeKo-Christian/flashsr-go/stream"
+	"github.com/cwbudde/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/stream"
 )
 
 // scaleEngine triples every sample and repeats it 3× to simulate 3× upsampling.

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
-	"github.com/MeKo-Christian/flashsr-go/engine/ort"
+	"github.com/cwbudde/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/engine/ort"
 )
 
 // Compile-time check: *ort.Engine satisfies engine.Engine.

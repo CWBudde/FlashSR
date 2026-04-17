@@ -65,3 +65,7 @@ clean:
 web-demo:
     ./web/build-wasm.sh
     python3 -m http.server 8080 -d web/dist
+
+fix:
+    just lint-fix
+    just fmt

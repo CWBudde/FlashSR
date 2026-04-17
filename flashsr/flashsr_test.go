@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/engine"
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/engine"
+	"github.com/cwbudde/flashsr-go/flashsr"
 )
 
 // mockEngine satisfies engine.Engine for unit testing without ORT.

@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MeKo-Christian/flashsr-go/flashsr"
-	"github.com/MeKo-Christian/flashsr-go/stream"
+	"github.com/cwbudde/flashsr-go/flashsr"
+	"github.com/cwbudde/flashsr-go/stream"
 )
 
 // requireOrtUpsamplerForStream creates a real ORT-backed Upsampler for stream benchmarks.
